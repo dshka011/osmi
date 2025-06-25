@@ -1,0 +1,457 @@
+import React, { useState } from 'react';
+import { Plus, Edit3, Trash2, Eye, EyeOff, GripVertical, DollarSign, Tag, Camera, X } from 'lucide-react';
+import { useAppContext } from '../../contexts/AppContext';
+import { MenuItem, MenuCategory } from '../../types';
+
+const MenuItemManager: React.FC = () => {
+  const { 
+    selectedRestaurant,
+    createMenuItem,
+    updateMenuItem,
+    deleteMenuItem,
+    getRestaurantCategories,
+    getCategoryItems,
+    formatPrice
+  } = useAppContext();
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    tags: '',
+    categoryId: '',
+    image: ''
+  });
+
+  const categories = selectedRestaurant ? getRestaurantCategories(selectedRestaurant.id) : [];
+  const visibleCategories = categories.filter(cat => cat.isVisible);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setImagePreview(result);
+        setFormData(prev => ({ ...prev, image: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview('');
+    setFormData(prev => ({ ...prev, image: '' }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedRestaurant) return;
+
+    const categoryId = formData.categoryId || selectedCategory;
+    if (!categoryId) return;
+
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    const existingItems = getCategoryItems(categoryId);
+
+    if (editingItem) {
+      updateMenuItem(editingItem.id, {
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        image: formData.image || undefined
+      });
+    } else {
+      createMenuItem({
+        categoryId,
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        image: formData.image || undefined,
+        isVisible: true,
+        position: existingItems.length
+      });
+    }
+    
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setFormData({ name: '', description: '', price: '', tags: '', categoryId: '', image: '' });
+    setImagePreview('');
+    setIsFormOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleEdit = (item: MenuItem) => {
+    setEditingItem(item);
+    setFormData({
+      name: item.name,
+      description: item.description || '',
+      price: item.price.toString(),
+      tags: item.tags.join(', '),
+      categoryId: item.categoryId,
+      image: item.image || ''
+    });
+    setImagePreview(item.image || '');
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (item: MenuItem) => {
+    if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
+      deleteMenuItem(item.id);
+    }
+  };
+
+  const toggleVisibility = (item: MenuItem) => {
+    updateMenuItem(item.id, { isVisible: !item.isVisible });
+  };
+
+  const openAddForm = (categoryId?: string) => {
+    setFormData({ name: '', description: '', price: '', tags: '', categoryId: categoryId || '', image: '' });
+    setImagePreview('');
+    setIsFormOpen(true);
+  };
+
+  if (!selectedRestaurant) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No restaurant selected</h3>
+          <p className="text-gray-500">Please select a restaurant first to manage menu items.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (categories.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
+          <p className="text-gray-500">Create some categories first before adding menu items.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currency = selectedRestaurant.currency || 'RUB';
+
+  return (
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Menu Items</h1>
+          <p className="text-gray-600">Add and manage your delicious menu items with photos</p>
+        </div>
+        <button
+          onClick={() => openAddForm()}
+          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Menu Item
+        </button>
+      </div>
+
+      {/* Menu Item Form */}
+      {isFormOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-4">
+              {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category *
+                </label>
+                <select
+                  required
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Item Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Margherita Pizza"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Photo
+                </label>
+                <div className="space-y-3">
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                      <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 mb-2">Upload a photo of your dish</p>
+                      <label className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
+                        <Camera className="w-4 h-4 mr-2" />
+                        Choose Photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                  placeholder="Describe your delicious dish..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Price * ({currency})
+                </label>
+                <input
+                  type="number"
+                  step={currency === 'RUB' ? '1' : '0.01'}
+                  min="0"
+                  required
+                  value={formData.price}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={currency === 'RUB' ? '500' : '0.00'}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tags
+                </label>
+                <input
+                  type="text"
+                  value={formData.tags}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="vegan, gluten-free, spicy (separate with commas)"
+                />
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {editingItem ? 'Update' : 'Create'} Item
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Menu Items by Category */}
+      <div className="space-y-8">
+        {categories.map((category) => {
+          const items = getCategoryItems(category.id);
+          
+          return (
+            <div key={category.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <h2 className="text-lg font-semibold text-gray-900">{category.name}</h2>
+                    <span className="text-sm text-gray-500">
+                      {items.length} item{items.length !== 1 ? 's' : ''}
+                    </span>
+                    {!category.isVisible && (
+                      <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full">
+                        Hidden
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => openAddForm(category.id)}
+                    className="inline-flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Item
+                  </button>
+                </div>
+              </div>
+
+              <div className="divide-y divide-gray-200">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`p-6 transition-all duration-200 hover:bg-gray-50 ${
+                      !item.isVisible ? 'bg-gray-25' : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-4 flex-1">
+                        <div className="cursor-move text-gray-400 hover:text-gray-600 mt-1">
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+                        
+                        {item.image && (
+                          <div className="w-20 h-20 flex-shrink-0">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover rounded-lg border border-gray-200"
+                            />
+                          </div>
+                        )}
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className={`font-medium ${
+                              item.isVisible ? 'text-gray-900' : 'text-gray-500'
+                            }`}>
+                              {item.name}
+                            </h3>
+                            <span className={`font-semibold ${
+                              item.isVisible ? 'text-emerald-600' : 'text-gray-400'
+                            }`}>
+                              {formatPrice(item.price, currency)}
+                            </span>
+                            {!item.isVisible && (
+                              <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full">
+                                Hidden
+                              </span>
+                            )}
+                          </div>
+                          {item.description && (
+                            <p className={`text-sm mb-3 ${
+                              item.isVisible ? 'text-gray-600' : 'text-gray-400'
+                            }`}>
+                              {item.description}
+                            </p>
+                          )}
+                          {item.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {item.tags.map((tag, index) => (
+                                <span
+                                  key={index}
+                                  className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${
+                                    item.isVisible
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : 'bg-gray-100 text-gray-500'
+                                  }`}
+                                >
+                                  <Tag className="w-3 h-3 mr-1" />
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 ml-4">
+                        <button
+                          onClick={() => toggleVisibility(item)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            item.isVisible
+                              ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                              : 'text-gray-400 bg-gray-100 hover:bg-gray-200'
+                          }`}
+                          title={item.isVisible ? 'Hide from menu' : 'Show in menu'}
+                        >
+                          {item.isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {items.length === 0 && (
+                  <div className="p-8 text-center">
+                    <p className="text-gray-500 text-sm">No items in this category yet.</p>
+                    <button
+                      onClick={() => openAddForm(category.id)}
+                      className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Add your first item
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default MenuItemManager;
