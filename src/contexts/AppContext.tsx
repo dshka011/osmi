@@ -262,7 +262,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    if ('workingHours' in dbData) delete dbData.workingHours;
     const { data, error } = await supabase
       .from('restaurants')
       .insert([dbData])
@@ -422,10 +421,150 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setMenuItems(prev => prev.filter(item => item.id !== id));
   };
 
-  // CSV Import (оставим как есть, можно доработать позже)
+  // CSV Import
   const importMenuFromCSV = async (restaurantId: string, csvContent: string): Promise<void> => {
-    // Можно реализовать импорт через Supabase, если потребуется
-    throw new Error('Импорт из CSV пока не реализован для Supabase');
+    try {
+      // Парсим CSV
+      const lines = csvContent.trim().split('\n');
+      if (lines.length < 2) {
+        throw new Error('CSV файл должен содержать заголовок и хотя бы одну строку данных');
+      }
+
+      // Парсим заголовок
+      const header = lines[0].split(',').map(col => col.trim().toLowerCase());
+      const expectedColumns = ['category', 'name', 'description', 'price', 'tags'];
+      
+      // Проверяем наличие всех необходимых колонок
+      for (const column of expectedColumns) {
+        if (!header.includes(column)) {
+          throw new Error(`Отсутствует обязательная колонка: ${column}`);
+        }
+      }
+
+      // Получаем индексы колонок
+      const categoryIndex = header.indexOf('category');
+      const nameIndex = header.indexOf('name');
+      const descriptionIndex = header.indexOf('description');
+      const priceIndex = header.indexOf('price');
+      const tagsIndex = header.indexOf('tags');
+
+      // Создаем Map для отслеживания созданных категорий
+      const categoryMap = new Map<string, string>();
+      
+      // Получаем существующие категории для этого ресторана
+      const existingCategories = getRestaurantCategories(restaurantId);
+      existingCategories.forEach(cat => {
+        categoryMap.set(cat.name.toLowerCase(), cat.id);
+      });
+
+      // Обрабатываем каждую строку данных
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Парсим строку с учетом кавычек
+        const values = parseCSVLine(line);
+        
+        if (values.length < expectedColumns.length) {
+          throw new Error(`Строка ${i + 1}: недостаточно данных`);
+        }
+
+        const categoryName = values[categoryIndex]?.trim();
+        const itemName = values[nameIndex]?.trim();
+        const description = values[descriptionIndex]?.trim();
+        const priceStr = values[priceIndex]?.trim();
+        const tagsStr = values[tagsIndex]?.trim();
+
+        // Валидация данных
+        if (!categoryName) {
+          throw new Error(`Строка ${i + 1}: название категории обязательно`);
+        }
+        if (!itemName) {
+          throw new Error(`Строка ${i + 1}: название блюда обязательно`);
+        }
+        if (!priceStr) {
+          throw new Error(`Строка ${i + 1}: цена обязательна`);
+        }
+
+        const price = parseFloat(priceStr);
+        if (isNaN(price) || price < 0) {
+          throw new Error(`Строка ${i + 1}: некорректная цена`);
+        }
+
+        // Создаем категорию, если не существует
+        let categoryId = categoryMap.get(categoryName.toLowerCase());
+        if (!categoryId) {
+          await createCategory({
+            name: categoryName,
+            description: '',
+            restaurantId,
+            isVisible: true,
+            position: existingCategories.length + categoryMap.size
+          });
+          // Получаем ID созданной категории из обновленного списка
+          const updatedCategories = getRestaurantCategories(restaurantId);
+          const newCategory = updatedCategories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
+          if (newCategory) {
+            categoryId = newCategory.id;
+            categoryMap.set(categoryName.toLowerCase(), categoryId);
+          } else {
+            throw new Error(`Не удалось создать категорию: ${categoryName}`);
+          }
+        }
+
+        // Парсим теги
+        const tags = tagsStr ? tagsStr.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+
+        // Создаем блюдо меню
+        if (categoryId) {
+          await createMenuItem({
+            name: itemName,
+            description: description || '',
+            price,
+            categoryId,
+            tags,
+            image: '',
+            isVisible: true,
+            position: getCategoryItems(categoryId).length
+          });
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Вспомогательная функция для парсинга CSV строки с учетом кавычек
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          // Экранированная кавычка
+          current += '"';
+          i++; // Пропускаем следующую кавычку
+        } else {
+          // Начало или конец кавычек
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // Конец поля
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    // Добавляем последнее поле
+    result.push(current);
+    
+    return result;
   };
 
   // Utility functions (оставляем как есть)

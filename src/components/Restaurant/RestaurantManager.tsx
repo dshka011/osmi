@@ -288,6 +288,29 @@ const RestaurantManager: React.FC = () => {
                 <p className="text-xs text-gray-500 mb-4">
                   {t('restaurant.csvImport.example')}
                 </p>
+                <div className="flex space-x-3 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const csvContent = `category,name,description,price,tags
+Закуски,Брускетта,Хрустящий хлеб с томатами и базиликом,450,вегетарианское,итальянское
+Закуски,Карпаччо,Тонко нарезанная говядина с пармезаном,650,мясное,итальянское
+Основные блюда,Стейк Рибай,Сочный стейк из говядины с овощами,1200,мясное,премиум
+Десерты,Тирамису,Классический итальянский десерт,450,сладкое,итальянское`;
+                      const blob = new Blob([csvContent], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = 'example-menu.csv';
+                      link.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="inline-flex items-center px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    {t('restaurant.csvImport.downloadExample')}
+                  </button>
+                </div>
                 <input
                   type="file"
                   accept=".csv"

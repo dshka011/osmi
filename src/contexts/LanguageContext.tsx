@@ -130,6 +130,7 @@ const translations = {
     'restaurant.csvImport.error': 'Ошибка импорта',
     'restaurant.csvImport.selectFile': 'Выберите корректный CSV файл',
     'restaurant.csvImport.importing': 'Импортируется...',
+    'restaurant.csvImport.downloadExample': 'Скачать пример',
     
     // QR Code
     'qr.title': 'QR-код для {name}',
@@ -320,6 +321,7 @@ const translations = {
     'restaurant.csvImport.error': 'Import failed',
     'restaurant.csvImport.selectFile': 'Please select a valid CSV file',
     'restaurant.csvImport.importing': 'Importing...',
+    'restaurant.csvImport.downloadExample': 'Download Example',
     
     // QR Code
     'qr.title': 'QR Code for {name}',
