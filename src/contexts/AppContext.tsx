@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import QRCode from 'qrcode';
 import { AppContextType, Restaurant, MenuCategory, MenuItem, CURRENCIES, DEFAULT_WORKING_HOURS, WorkingHours, DAY_NAMES } from '../types';
 import supabase from '../supabaseClient';
+import { useAuth } from './AuthContext';
 
 const AppContext = createContext<AppContextType | null>(null);
 
@@ -18,6 +19,7 @@ interface AppProviderProps {
 }
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
+  const { user } = useAuth();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -74,48 +76,41 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   // Загрузка всех данных при запуске
   useEffect(() => {
+    if (!user) return;
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Рестораны
+        // Рестораны только текущего пользователя
         const { data: restaurantsData, error: restaurantsError } = await supabase
           .from('restaurants')
-          .select('*');
+          .select('*')
+          .eq('user_id', user.id);
         if (restaurantsError) throw restaurantsError;
-        
-        // Заменяем картинки на рабочие, если они есть
         const restaurantsWithFixedImages = (restaurantsData || []).map(restaurant => ({
           ...restaurant,
           logo: restaurant.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop',
           photo: restaurant.photo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop'
         }));
-        
         setRestaurants(restaurantsWithFixedImages.map(mapRestaurantFromDb));
-        
         // Категории
         const { data: categoriesData, error: categoriesError } = await supabase
           .from('menu_categories')
           .select('*');
         if (categoriesError) throw categoriesError;
         setCategories((categoriesData || []).map(mapCategoryFromDb));
-        
         // Пункты меню
         const { data: menuItemsData, error: menuItemsError } = await supabase
           .from('menu_items')
           .select('*');
         if (menuItemsError) throw menuItemsError;
-        
-        // Заменяем картинки блюд на рабочие
         const menuItemsWithFixedImages = (menuItemsData || []).map(item => ({
           ...item,
           image: item.image || getDefaultFoodImage(item.name)
         }));
-        
         setMenuItems(menuItemsWithFixedImages.map(mapItemFromDb));
-        
         // По умолчанию выбираем первый ресторан
-        if ((restaurantsData || []).length > 0) {
+        if ((restaurantsWithFixedImages || []).length > 0) {
           setSelectedRestaurant(mapRestaurantFromDb(restaurantsWithFixedImages[0]));
         }
       } catch (e: any) {
@@ -125,7 +120,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       }
     };
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Функция для получения картинки по умолчанию в зависимости от названия блюда
   const getDefaultFoodImage = (dishName: string): string => {
@@ -157,12 +153,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   // CRUD для ресторанов
   const createRestaurant = async (restaurantData: Omit<Restaurant, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!user) throw new Error('Пользователь не авторизован');
+    const dbData = {
+      ...restaurantData,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
     const { data, error } = await supabase
       .from('restaurants')
-      .insert([{ ...restaurantData }])
+      .insert([dbData])
       .select();
     if (error) throw error;
-    setRestaurants(prev => [...prev, ...(data || [])]);
+    setRestaurants(prev => [...prev, ...(data || []).map(mapRestaurantFromDb)]);
   };
 
   const updateRestaurant = async (id: string, updates: Partial<Restaurant>) => {
@@ -351,16 +354,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       .filter(([_, hours]) => hours.isOpen);
     if (openDays.length === 0) return 'Закрыто';
     if (openDays.length === 7) {
-      const allSameHours = Object.values(workingHours).every(hours =>
-        hours.isOpen &&
-        hours.openTime === workingHours.monday.openTime &&
+      const allSameHours = Object.values(workingHours).every(hours => 
+        hours.isOpen && 
+        hours.openTime === workingHours.monday.openTime && 
         hours.closeTime === workingHours.monday.closeTime
       );
       if (allSameHours) {
         return `Ежедневно: ${workingHours.monday.openTime}-${workingHours.monday.closeTime}`;
       }
     }
-    const dayStrings = openDays.slice(0, 3).map(([day, hours]) =>
+    const dayStrings = openDays.slice(0, 3).map(([day, hours]) => 
       `${DAY_NAMES[day as keyof typeof DAY_NAMES]}: ${hours.openTime}-${hours.closeTime}`
     );
     return dayStrings.join(', ') + (openDays.length > 3 ? '...' : '');

@@ -40,6 +40,8 @@ const RestaurantManager: React.FC = () => {
     photo: '',
     workingHours: DEFAULT_WORKING_HOURS
   });
+  const [formError, setFormError] = useState<string>('');
+  const [formLoading, setFormLoading] = useState(false);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,16 +92,22 @@ const RestaurantManager: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (editingRestaurant) {
-      updateRestaurant(editingRestaurant.id, formData);
-    } else {
-      createRestaurant(formData);
+    setFormError('');
+    setFormLoading(true);
+    try {
+      if (editingRestaurant) {
+        await updateRestaurant(editingRestaurant.id, formData);
+      } else {
+        await createRestaurant(formData);
+      }
+      resetForm();
+    } catch (err: any) {
+      setFormError(err.message || 'Ошибка при создании ресторана');
+    } finally {
+      setFormLoading(false);
     }
-    
-    resetForm();
   };
 
   const resetForm = () => {
@@ -558,12 +566,17 @@ const RestaurantManager: React.FC = () => {
                 </div>
               </div>
 
+              {formError && (
+                <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">{formError}</div>
+              )}
+
               <div className="flex space-x-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  disabled={formLoading}
                 >
-                  {editingRestaurant ? 'Update' : 'Create'} Restaurant
+                  {formLoading ? 'Сохранение...' : (editingRestaurant ? 'Update' : 'Create')} Restaurant
                 </button>
                 <button
                   type="button"
