@@ -74,6 +74,89 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     };
   }
 
+  // Функция для создания тестовых данных
+  async function createDemoRestaurant(userId: string) {
+    // 1. Создаём ресторан
+    const { data: restaurantData, error: restaurantError } = await supabase
+      .from('restaurants')
+      .insert([
+        {
+          name: 'Demo Bella Vista',
+          description: 'Пример итальянского ресторана с аутентичной кухней',
+          logo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop',
+          photo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop',
+          phone: '+7 (495) 000-00-00',
+          email: 'demo@bellavista.ru',
+          address: 'ул. Примерная, 1, Москва',
+          website: 'https://demo.bellavista.ru',
+          currency: 'RUB',
+          working_hours: {
+            monday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
+            tuesday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
+            wednesday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
+            thursday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
+            friday: { isOpen: true, openTime: '11:00', closeTime: '00:00' },
+            saturday: { isOpen: true, openTime: '12:00', closeTime: '00:00' },
+            sunday: { isOpen: true, openTime: '12:00', closeTime: '22:00' }
+          },
+          user_id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ])
+      .select();
+    if (restaurantError || !restaurantData || !restaurantData[0]) return;
+    const restaurantId = restaurantData[0].id;
+
+    // 2. Создаём категории
+    const categories = [
+      { name: 'Закуски', description: 'Традиционные итальянские закуски', position: 0 },
+      { name: 'Основные блюда', description: 'Паста, пицца и другие блюда', position: 1 },
+      { name: 'Десерты', description: 'Сладкие завершения', position: 2 },
+      { name: 'Напитки', description: 'Вина, кофе и напитки', position: 3 },
+    ];
+    const { data: categoriesData, error: categoriesError } = await supabase
+      .from('menu_categories')
+      .insert(categories.map((cat, i) => ({
+        ...cat,
+        restaurant_id: restaurantId,
+        is_visible: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })))
+      .select();
+    if (categoriesError || !categoriesData) return;
+
+    // 3. Создаём блюда
+    const catIds = categoriesData.map((cat: any) => cat.id);
+    const menuItems = [
+      // Закуски
+      { category: 0, name: 'Брускетта с томатами', description: 'Хрустящий хлеб с томатами и базиликом', price: 450, tags: ['вегетарианское'], image: '', position: 0 },
+      { category: 0, name: 'Карпаччо из говядины', description: 'Говядина с рукколой и пармезаном', price: 890, tags: [], image: '', position: 1 },
+      // Основные блюда
+      { category: 1, name: 'Паста Карбонара', description: 'Спагетти с беконом и пармезаном', price: 750, tags: [], image: '', position: 0 },
+      { category: 1, name: 'Пицца Маргарита', description: 'Пицца с томатами и моцареллой', price: 650, tags: ['вегетарианское'], image: '', position: 1 },
+      // Десерты
+      { category: 2, name: 'Тирамису', description: 'Классический итальянский десерт', price: 420, tags: [], image: '', position: 0 },
+      { category: 2, name: 'Панна котта', description: 'Десерт с ягодным соусом', price: 380, tags: ['без глютена'], image: '', position: 1 },
+      // Напитки
+      { category: 3, name: 'Эспрессо', description: 'Крепкий итальянский кофе', price: 180, tags: [], image: '', position: 0 },
+      { category: 3, name: 'Кьянти Классико', description: 'Красное вино из Тосканы (бокал)', price: 450, tags: [], image: '', position: 1 },
+    ];
+    await supabase.from('menu_items').insert(menuItems.map(item => ({
+      category_id: catIds[item.category],
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      tags: item.tags,
+      image: item.image,
+      is_visible: true,
+      position: item.position,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })));
+  }
+
   // Загрузка всех данных при запуске
   useEffect(() => {
     if (!user) return;
@@ -87,12 +170,23 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           .select('*')
           .eq('user_id', user.id);
         if (restaurantsError) throw restaurantsError;
-        const restaurantsWithFixedImages = (restaurantsData || []).map(restaurant => ({
-          ...restaurant,
-          logo: restaurant.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop',
-          photo: restaurant.photo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop'
-        }));
-        setRestaurants(restaurantsWithFixedImages.map(mapRestaurantFromDb));
+        // Если ресторанов нет — создаём демо
+        if (!restaurantsData || restaurantsData.length === 0) {
+          await createDemoRestaurant(user.id);
+          // Повторно загружаем рестораны
+          const { data: demoRestaurants } = await supabase
+            .from('restaurants')
+            .select('*')
+            .eq('user_id', user.id);
+          setRestaurants((demoRestaurants || []).map(mapRestaurantFromDb));
+        } else {
+          const restaurantsWithFixedImages = (restaurantsData || []).map(restaurant => ({
+            ...restaurant,
+            logo: restaurant.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop',
+            photo: restaurant.photo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop'
+          }));
+          setRestaurants(restaurantsWithFixedImages.map(mapRestaurantFromDb));
+        }
         // Категории
         const { data: categoriesData, error: categoriesError } = await supabase
           .from('menu_categories')
@@ -110,8 +204,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         }));
         setMenuItems(menuItemsWithFixedImages.map(mapItemFromDb));
         // По умолчанию выбираем первый ресторан
-        if ((restaurantsWithFixedImages || []).length > 0) {
-          setSelectedRestaurant(mapRestaurantFromDb(restaurantsWithFixedImages[0]));
+        const allRestaurants = restaurantsData && restaurantsData.length > 0
+          ? restaurantsWithFixedImages
+          : (await supabase.from('restaurants').select('*').eq('user_id', user.id)).data || [];
+        if (allRestaurants.length > 0) {
+          setSelectedRestaurant(mapRestaurantFromDb(allRestaurants[0]));
         }
       } catch (e: any) {
         setError(e.message || 'Ошибка загрузки данных');
