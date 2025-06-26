@@ -262,7 +262,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    if ('workingHours' in dbData) delete dbData.workingHours;
+    if (Object.prototype.hasOwnProperty.call(dbData, 'workingHours')) delete dbData.workingHours;
     const { data, error } = await supabase
       .from('restaurants')
       .insert([dbData])
@@ -494,7 +494,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
-  const contextValue: AppContextType = {
+  const contextValue: AppContextType & { getDefaultFoodImage: typeof getDefaultFoodImage } = {
     restaurants,
     categories,
     menuItems,
@@ -518,7 +518,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getCurrencySymbol,
     formatPrice,
     formatWorkingHours,
-    generateQRCode
+    generateQRCode,
+    getDefaultFoodImage
   };
 
   if (loading) return <div>Загрузка...</div>;

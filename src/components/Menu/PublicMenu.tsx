@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import supabase from '../../supabaseClient';
 import { Restaurant, MenuCategory, MenuItem } from '../../types';
 import { MapPin, Phone, Mail, Globe, Clock, Tag } from 'lucide-react';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface PublicMenuProps {
   restaurantId?: string;
@@ -16,6 +17,8 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { getDefaultFoodImage, formatWorkingHours } = useAppContext();
+  const [showAllHours, setShowAllHours] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -100,6 +103,13 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
 
   const currency = restaurant.currency || 'RUB';
   
+  // --- часы работы ---
+  const today = new Date().toLocaleDateString('ru-RU', { weekday: 'long' }).toLowerCase();
+  const dayKey = Object.keys(restaurant.workingHours).find(
+    d => today.includes(d.slice(0, 3))
+  ) as keyof typeof restaurant.workingHours;
+  const todayHours = restaurant.workingHours[dayKey];
+
   if (categories.length === 0) {
     return (
       <div className="p-6">
@@ -132,18 +142,27 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
             {restaurant.phone && (
               <p className="text-gray-500 text-sm">{restaurant.phone}</p>
             )}
+            {/* Часы работы */}
+            <div className="mt-3 flex items-center gap-2 justify-center md:justify-start">
+              <Clock className="w-5 h-5 text-emerald-600" />
+              <span className="text-sm text-gray-700 cursor-pointer select-none" onClick={() => setShowAllHours(v => !v)}>
+                {todayHours?.isOpen
+                  ? `Сегодня: ${todayHours.openTime}–${todayHours.closeTime}`
+                  : 'Сегодня: закрыто'}
+                <span className="ml-2 text-xs text-blue-500 underline">{showAllHours ? 'Скрыть' : 'Показать все'}</span>
+              </span>
+            </div>
+            {showAllHours && (
+              <div className="mt-2 bg-gray-50 rounded-lg p-3 border border-emerald-100 text-sm text-gray-700 shadow-sm">
+                {Object.entries(restaurant.workingHours).map(([day, hours]) => (
+                  <div key={day} className="flex justify-between py-0.5">
+                    <span className="font-medium">{day[0].toUpperCase() + day.slice(1)}</span>
+                    <span>{hours.isOpen ? `${hours.openTime}–${hours.closeTime}` : 'Закрыто'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-        <div className="flex flex-col md:flex-row md:justify-between items-center gap-2 mb-4">
-          <span className="text-sm text-gray-400">Публичное меню</span>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(window.location.href);
-            }}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-          >
-            Скопировать ссылку
-          </button>
         </div>
       </div>
       <div className="max-w-2xl mx-auto">
@@ -153,13 +172,11 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
             <div className="grid gap-4 md:grid-cols-2">
               {getCategoryItems(cat.id).map((item) => (
                 <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col">
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-32 object-cover rounded-lg mb-2 border border-gray-200"
-                    />
-                  )}
+                  <img
+                    src={item.image || getDefaultFoodImage(item.name)}
+                    alt={item.name}
+                    className="w-full h-32 object-cover rounded-lg mb-2 border border-gray-200"
+                  />
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 mb-1">{item.name}</h3>
                     <p className="text-gray-600 text-sm mb-2">{item.description}</p>
