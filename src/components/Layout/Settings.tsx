@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Globe, Monitor, Bell, Database, Info, Check, ChevronRight } from 'lucide-react';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
 
@@ -6,6 +6,24 @@ const Settings: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [savedMessage, setSavedMessage] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Закрытие выпадающего списка при клике вне его
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowLanguageDropdown(false);
+      }
+    };
+
+    if (showLanguageDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showLanguageDropdown]);
 
   const handleLanguageChange = (newLanguage: Language) => {
     setLanguage(newLanguage);
@@ -28,7 +46,7 @@ const Settings: React.FC = () => {
       description: t('settings.language.description'),
       icon: Globe,
       content: (
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
             className="w-full flex items-center justify-between p-3 bg-white border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
@@ -43,7 +61,7 @@ const Settings: React.FC = () => {
           </button>
 
           {showLanguageDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999]">
               {languages.map((lang) => (
                 <button
                   key={lang.code}
@@ -144,7 +162,7 @@ const Settings: React.FC = () => {
           const Icon = section.icon;
           
           return (
-            <div key={section.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div key={section.id} className="bg-white rounded-xl border border-gray-200">
               <div className="p-6">
                 <div className="flex items-start space-x-4 mb-4">
                   <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
