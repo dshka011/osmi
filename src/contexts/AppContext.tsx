@@ -170,7 +170,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           .select('*')
           .eq('user_id', user.id);
         if (restaurantsError) throw restaurantsError;
-        // Если ресторанов нет — создаём демо
+        let allRestaurants: any[] = [];
         if (!restaurantsData || restaurantsData.length === 0) {
           await createDemoRestaurant(user.id);
           // Повторно загружаем рестораны
@@ -178,7 +178,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             .from('restaurants')
             .select('*')
             .eq('user_id', user.id);
-          setRestaurants((demoRestaurants || []).map(mapRestaurantFromDb));
+          const demoRestaurantsWithFixedImages = (demoRestaurants || []).map(restaurant => ({
+            ...restaurant,
+            logo: restaurant.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop',
+            photo: restaurant.photo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop'
+          }));
+          setRestaurants(demoRestaurantsWithFixedImages.map(mapRestaurantFromDb));
+          allRestaurants = demoRestaurantsWithFixedImages;
         } else {
           const restaurantsWithFixedImages = (restaurantsData || []).map(restaurant => ({
             ...restaurant,
@@ -186,6 +192,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             photo: restaurant.photo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop'
           }));
           setRestaurants(restaurantsWithFixedImages.map(mapRestaurantFromDb));
+          allRestaurants = restaurantsWithFixedImages;
         }
         // Категории
         const { data: categoriesData, error: categoriesError } = await supabase
@@ -204,9 +211,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         }));
         setMenuItems(menuItemsWithFixedImages.map(mapItemFromDb));
         // По умолчанию выбираем первый ресторан
-        const allRestaurants = restaurantsData && restaurantsData.length > 0
-          ? restaurantsWithFixedImages
-          : (await supabase.from('restaurants').select('*').eq('user_id', user.id)).data || [];
         if (allRestaurants.length > 0) {
           setSelectedRestaurant(mapRestaurantFromDb(allRestaurants[0]));
         }
