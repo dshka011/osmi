@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Plus, Edit3, Trash2, Eye, EyeOff, GripVertical, DollarSign, Tag, Camera, X } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { MenuItem, MenuCategory } from '../../types';
 
 const MenuItemManager: React.FC = () => {
+  const { t } = useLanguage();
   const { 
     selectedRestaurant,
     createMenuItem,
@@ -107,7 +109,7 @@ const MenuItemManager: React.FC = () => {
   };
 
   const handleDelete = (item: MenuItem) => {
-    if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
+    if (window.confirm(t('menuItem.delete.confirm', { name: item.name }))) {
       deleteMenuItem(item.id);
     }
   };
@@ -127,8 +129,8 @@ const MenuItemManager: React.FC = () => {
       <div className="p-6">
         <div className="text-center py-12">
           <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No restaurant selected</h3>
-          <p className="text-gray-500">Please select a restaurant first to manage menu items.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('menuItem.noRestaurant')}</h3>
+          <p className="text-gray-500">{t('menuItem.noRestaurant.description')}</p>
         </div>
       </div>
     );
@@ -139,8 +141,8 @@ const MenuItemManager: React.FC = () => {
       <div className="p-6">
         <div className="text-center py-12">
           <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
-          <p className="text-gray-500">Create some categories first before adding menu items.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('menuItem.noCategories')}</h3>
+          <p className="text-gray-500">{t('menuItem.noCategories.description')}</p>
         </div>
       </div>
     );
@@ -152,15 +154,15 @@ const MenuItemManager: React.FC = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Menu Items</h1>
-          <p className="text-gray-600">Add and manage your delicious menu items with photos</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('menuItem.title')}</h1>
+          <p className="text-gray-600">{t('menuItem.subtitle')}</p>
         </div>
         <button
           onClick={() => openAddForm()}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Menu Item
+          {t('menuItem.add')}
         </button>
       </div>
 
@@ -169,12 +171,12 @@ const MenuItemManager: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-semibold mb-4">
-              {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
+              {editingItem ? t('menuItem.edit') : t('menuItem.create')}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
+                  {t('menuItem.category.required')}
                 </label>
                 <select
                   required
@@ -182,7 +184,7 @@ const MenuItemManager: React.FC = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Select a category</option>
+                  <option value="">{t('menuItem.category.select')}</option>
                   {categories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -193,7 +195,7 @@ const MenuItemManager: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Item Name *
+                  {t('menuItem.name.required')}
                 </label>
                 <input
                   type="text"

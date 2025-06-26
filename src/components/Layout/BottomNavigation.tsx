@@ -20,32 +20,32 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   const navigationItems = [
     {
       id: 'restaurants',
-      label: 'Рестораны',
+      label: t('nav.restaurants'),
       icon: Store,
       badge: restaurants.length,
       disabled: false,
     },
     {
       id: 'categories',
-      label: 'Категории',
+      label: t('nav.categories'),
       icon: Menu,
       disabled: !selectedRestaurant,
     },
     {
       id: 'menu-items',
-      label: 'Блюда',
+      label: t('nav.menuItems'),
       icon: Restaurant,
       disabled: !selectedRestaurant,
     },
     {
       id: 'preview',
-      label: 'Просмотр',
+      label: t('nav.preview'),
       icon: Eye,
       disabled: !selectedRestaurant,
     },
     {
       id: 'settings',
-      label: 'Настройки',
+      label: t('nav.settings'),
       icon: Settings,
       disabled: false,
     },

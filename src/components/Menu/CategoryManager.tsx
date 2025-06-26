@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Plus, Edit3, Trash2, Menu, Eye, EyeOff, GripVertical } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { MenuCategory } from '../../types';
 
 const CategoryManager: React.FC = () => {
+  const { t } = useLanguage();
   const { 
     selectedRestaurant,
     createCategory,
@@ -60,8 +62,8 @@ const CategoryManager: React.FC = () => {
   const handleDelete = (category: MenuCategory) => {
     const itemCount = getCategoryItems(category.id).length;
     const message = itemCount > 0 
-      ? `Are you sure you want to delete "${category.name}"? This will also delete ${itemCount} menu item(s).`
-      : `Are you sure you want to delete "${category.name}"?`;
+      ? t('category.delete.confirmWithItems', { name: category.name, count: itemCount })
+      : t('category.delete.confirm', { name: category.name });
       
     if (window.confirm(message)) {
       deleteCategory(category.id);
@@ -77,8 +79,8 @@ const CategoryManager: React.FC = () => {
       <div className="p-6">
         <div className="text-center py-12">
           <Menu className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No restaurant selected</h3>
-          <p className="text-gray-500">Please select a restaurant first to manage categories.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('category.noRestaurant')}</h3>
+          <p className="text-gray-500">{t('category.noRestaurant.description')}</p>
         </div>
       </div>
     );
@@ -88,15 +90,15 @@ const CategoryManager: React.FC = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Menu Categories</h1>
-          <p className="text-gray-600">Organize your menu with categories like Starters, Mains, Desserts</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('category.title')}</h1>
+          <p className="text-gray-600">{t('category.subtitle')}</p>
         </div>
         <button
           onClick={() => setIsFormOpen(true)}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Category
+          {t('category.add')}
         </button>
       </div>
 
@@ -105,12 +107,12 @@ const CategoryManager: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-4">
-              {editingCategory ? 'Edit Category' : 'Add New Category'}
+              {editingCategory ? t('category.edit') : t('category.create')}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category Name *
+                  {t('category.name.required')}
                 </label>
                 <input
                   type="text"
@@ -118,19 +120,19 @@ const CategoryManager: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Starters, Main Courses, Desserts"
+                  placeholder={t('category.name.placeholder')}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  {t('common.description')}
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
-                  placeholder="Optional description for this category"
+                  placeholder={t('category.description.placeholder')}
                 />
               </div>
               <div className="flex space-x-3 pt-4">
@@ -138,14 +140,14 @@ const CategoryManager: React.FC = () => {
                   type="submit"
                   className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  {editingCategory ? 'Update' : 'Create'} Category
+                  {editingCategory ? t('category.update') : t('category.create')}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
                   className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -185,8 +187,8 @@ const CategoryManager: React.FC = () => {
                         {category.name}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {itemCount} item{itemCount !== 1 ? 's' : ''}
-                        {!category.isVisible && ' • Hidden from menu'}
+                        {itemCount === 1 ? t('category.items.single', { count: itemCount }) : t('category.items', { count: itemCount })}
+                        {!category.isVisible && ` • ${t('category.hiddenFromMenu')}`}
                       </p>
                     </div>
                   </div>

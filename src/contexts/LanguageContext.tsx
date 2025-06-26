@@ -69,6 +69,9 @@ const translations = {
     'common.success': 'Успешно',
     'common.warning': 'Предупреждение',
     'common.info': 'Информация',
+    'common.saving': 'Сохранение...',
+    'common.clickToSelect': 'Нажмите для выбора',
+    'common.currencyLabel': 'Валюта',
     
     // Settings
     'settings.title': 'Настройки',
@@ -205,6 +208,10 @@ const translations = {
     'app.title': 'Osmi',
     'app.subtitle': 'Управление меню',
     'app.brand': 'Osmi Restaurant Menu Management Dashboard',
+    
+    // Restaurant Selector
+    'restaurantSelector.searchPlaceholder': 'Поиск ресторанов...',
+    'restaurantSelector.notFound': 'Рестораны не найдены',
   },
   en: {
     // Navigation
@@ -252,6 +259,9 @@ const translations = {
     'common.success': 'Success',
     'common.warning': 'Warning',
     'common.info': 'Information',
+    'common.saving': 'Saving...',
+    'common.clickToSelect': 'Click to select',
+    'common.currencyLabel': 'Currency',
     
     // Settings
     'settings.title': 'Settings',
@@ -388,6 +398,10 @@ const translations = {
     'app.title': 'Osmi',
     'app.subtitle': 'Menu Management',
     'app.brand': 'Osmi Restaurant Menu Management Dashboard',
+    
+    // Restaurant Selector
+    'restaurantSelector.searchPlaceholder': 'Search restaurants...',
+    'restaurantSelector.notFound': 'Restaurants not found',
   }
 };
 

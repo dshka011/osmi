@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Plus, Edit3, Trash2, Store, Phone, Mail, MapPin, Globe, QrCode, Link2, Clock, Camera, X, Upload, Download } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Restaurant, CURRENCIES, DEFAULT_WORKING_HOURS, WorkingHours, DAY_NAMES } from '../../types';
 
 const RestaurantManager: React.FC = () => {
+  const { t } = useLanguage();
   const { 
     restaurants, 
     selectedRestaurant, 
@@ -212,8 +214,8 @@ const RestaurantManager: React.FC = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Restaurants</h1>
-          <p className="text-gray-600">Manage your restaurants and generate menu links</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('restaurant.title')}</h1>
+          <p className="text-gray-600">{t('restaurant.subtitle')}</p>
         </div>
         <div className="flex space-x-3">
           {selectedRestaurant && (
@@ -222,7 +224,7 @@ const RestaurantManager: React.FC = () => {
               className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
             >
               <Upload className="w-4 h-4 mr-2" />
-              Import CSV
+              {t('restaurant.csvImport')}
             </button>
           )}
           <button
@@ -230,7 +232,7 @@ const RestaurantManager: React.FC = () => {
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Restaurant
+            {t('restaurant.add')}
           </button>
         </div>
       </div>
@@ -239,7 +241,7 @@ const RestaurantManager: React.FC = () => {
       {isQRModalOpen && qrCodeData && qrRestaurant && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md text-center">
-            <h2 className="text-xl font-semibold mb-4">QR Code for {qrRestaurant.name}</h2>
+            <h2 className="text-xl font-semibold mb-4">{t('qr.title', { name: qrRestaurant.name })}</h2>
             <div className="mb-4">
               <img
                 src={qrCodeData}
@@ -248,7 +250,7 @@ const RestaurantManager: React.FC = () => {
               />
             </div>
             <p className="text-sm text-gray-600 mb-6">
-              Customers can scan this QR code to view your menu
+              {t('qr.description')}
             </p>
             <div className="flex space-x-3">
               <button
@@ -256,7 +258,7 @@ const RestaurantManager: React.FC = () => {
                 className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors inline-flex items-center justify-center"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Download
+                {t('qr.download')}
               </button>
               <button
                 onClick={() => {
@@ -266,7 +268,7 @@ const RestaurantManager: React.FC = () => {
                 }}
                 className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
               >
-                Close
+                {t('common.close')}
               </button>
             </div>
           </div>
@@ -277,14 +279,14 @@ const RestaurantManager: React.FC = () => {
       {isCSVImportOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Import Menu from CSV</h2>
+            <h2 className="text-xl font-semibold mb-4">{t('restaurant.csvImport.title')}</h2>
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-600 mb-3">
-                  Upload a CSV file with columns: <strong>category, name, description, price, tags</strong>
+                  {t('restaurant.csvImport.description')}
                 </p>
                 <p className="text-xs text-gray-500 mb-4">
-                  Example: "Закуски,Брускетта,Хрустящий хлеб с томатами,450,вегетарианское"
+                  {t('restaurant.csvImport.example')}
                 </p>
                 <input
                   type="file"
@@ -310,7 +312,7 @@ const RestaurantManager: React.FC = () => {
                   disabled={!csvFile || csvImportStatus.includes('Importing')}
                   className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Import Menu
+                  {t('restaurant.csvImport.button')}
                 </button>
                 <button
                   onClick={() => {
@@ -320,7 +322,7 @@ const RestaurantManager: React.FC = () => {
                   }}
                   className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>
@@ -333,14 +335,14 @@ const RestaurantManager: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-semibold mb-6">
-              {editingRestaurant ? 'Edit Restaurant' : 'Add New Restaurant'}
+              {editingRestaurant ? t('restaurant.edit') : t('restaurant.create')}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Restaurant Name *
+                    {t('restaurant.name.required')}
                   </label>
                   <input
                     type="text"
@@ -348,12 +350,12 @@ const RestaurantManager: React.FC = () => {
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter restaurant name"
+                    placeholder={t('restaurant.name.placeholder')}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Currency *
+                    {t('restaurant.currency.required')}
                   </label>
                   <select
                     required
@@ -372,14 +374,14 @@ const RestaurantManager: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  {t('common.description')}
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
-                  placeholder="Brief description of your restaurant"
+                  placeholder={t('restaurant.description.placeholder')}
                 />
               </div>
 
@@ -388,7 +390,7 @@ const RestaurantManager: React.FC = () => {
                 {/* Logo Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Restaurant Logo/Avatar
+                    {t('restaurant.logo.upload')}
                   </label>
                   <div className="space-y-3">
                     {logoPreview ? (
@@ -409,10 +411,10 @@ const RestaurantManager: React.FC = () => {
                     ) : (
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                         <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600 mb-2">Upload restaurant logo</p>
+                        <p className="text-sm text-gray-600 mb-2">{t('restaurant.logo.upload')}</p>
                         <label className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
                           <Camera className="w-4 h-4 mr-2" />
-                          Choose Logo
+                          {t('restaurant.logo.choose')}
                           <input
                             type="file"
                             accept="image/*"
@@ -428,7 +430,7 @@ const RestaurantManager: React.FC = () => {
                 {/* Photo Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Restaurant Photo
+                    {t('restaurant.photo.upload')}
                   </label>
                   <div className="space-y-3">
                     {photoPreview ? (
@@ -449,10 +451,10 @@ const RestaurantManager: React.FC = () => {
                     ) : (
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                         <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600 mb-2">Upload restaurant photo</p>
+                        <p className="text-sm text-gray-600 mb-2">{t('restaurant.photo.upload')}</p>
                         <label className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
                           <Camera className="w-4 h-4 mr-2" />
-                          Choose Photo
+                          {t('restaurant.photo.choose')}
                           <input
                             type="file"
                             accept="image/*"
@@ -470,60 +472,60 @@ const RestaurantManager: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone
+                    {t('common.phone')}
                   </label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Phone number"
+                    placeholder={t('restaurant.phone.placeholder')}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
+                    {t('common.email')}
                   </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Email address"
+                    placeholder={t('restaurant.email.placeholder')}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address
+                  {t('common.address')}
                 </label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Restaurant address"
+                  placeholder={t('restaurant.address.placeholder')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website
+                  {t('common.website')}
                 </label>
                 <input
                   type="url"
                   value={formData.website}
                   onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://yourrestaurant.com"
+                  placeholder={t('restaurant.website.placeholder')}
                 />
               </div>
 
               {/* Working Hours */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Working Hours
+                  {t('restaurant.workingHours')}
                 </label>
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="grid gap-3">
@@ -540,7 +542,7 @@ const RestaurantManager: React.FC = () => {
                               onChange={(e) => handleWorkingHoursChange(day as keyof WorkingHours, 'isOpen', e.target.checked)}
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="ml-2 text-sm text-gray-600">Open</span>
+                            <span className="ml-2 text-sm text-gray-600">{t('common.open')}</span>
                           </label>
                         </div>
                         {formData.workingHours[day as keyof WorkingHours].isOpen && (
@@ -576,14 +578,14 @@ const RestaurantManager: React.FC = () => {
                   className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                   disabled={formLoading}
                 >
-                  {formLoading ? 'Сохранение...' : (editingRestaurant ? 'Update' : 'Create')} Restaurant
+                  {formLoading ? t('common.saving') : (editingRestaurant ? t('restaurant.update') : t('restaurant.create'))}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
                   className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -631,10 +633,10 @@ const RestaurantManager: React.FC = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900">{restaurant.name}</h3>
                     <p className="text-sm text-gray-500">
-                      {selectedRestaurant?.id === restaurant.id ? 'Active' : 'Click to select'}
+                      {selectedRestaurant?.id === restaurant.id ? t('restaurant.activeRestaurant') : t('common.clickToSelect')}
                     </p>
                     <p className="text-xs text-gray-400">
-                      Currency: {getCurrencySymbol(restaurant.currency || 'RUB')} {restaurant.currency || 'RUB'}
+                      {t('common.currencyLabel')}: {getCurrencySymbol(restaurant.currency || 'RUB')} {restaurant.currency || 'RUB'}
                     </p>
                   </div>
                 </div>
@@ -706,7 +708,7 @@ const RestaurantManager: React.FC = () => {
                   className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   <Link2 className="w-4 h-4 mr-1" />
-                  Copy Link
+                  {t('restaurant.copyLink')}
                 </button>
                 <button
                   onClick={(e) => {
@@ -716,7 +718,7 @@ const RestaurantManager: React.FC = () => {
                   className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
                 >
                   <QrCode className="w-4 h-4 mr-1" />
-                  QR Code
+                  {t('restaurant.qrCode')}
                 </button>
               </div>
             </div>
@@ -727,14 +729,14 @@ const RestaurantManager: React.FC = () => {
       {restaurants.length === 0 && (
         <div className="text-center py-12">
           <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No restaurants yet</h3>
-          <p className="text-gray-500 mb-6">Create your first restaurant to get started with menu management.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('restaurant.noRestaurants')}</h3>
+          <p className="text-gray-500 mb-6">{t('restaurant.noRestaurants.description')}</p>
           <button
             onClick={() => setIsFormOpen(true)}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Your First Restaurant
+            {t('restaurant.addFirst')}
           </button>
         </div>
       )}
