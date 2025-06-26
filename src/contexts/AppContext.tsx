@@ -157,9 +157,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const dbData = {
       ...restaurantData,
       user_id: user.id,
+      working_hours: restaurantData.workingHours,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    if ('workingHours' in dbData) delete dbData.workingHours;
     const { data, error } = await supabase
       .from('restaurants')
       .insert([dbData])
@@ -169,15 +171,20 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const updateRestaurant = async (id: string, updates: Partial<Restaurant>) => {
+    const dbUpdates: any = { ...updates };
+    if ('workingHours' in updates) {
+      dbUpdates.working_hours = updates.workingHours;
+      delete dbUpdates.workingHours;
+    }
     const { data, error } = await supabase
       .from('restaurants')
-      .update({ ...updates })
+      .update(dbUpdates)
       .eq('id', id)
       .select();
     if (error) throw error;
-    setRestaurants(prev => prev.map(r => (r.id === id ? { ...r, ...updates } : r)));
+    setRestaurants(prev => prev.map(r => (r.id === id ? mapRestaurantFromDb(data[0]) : r)));
     if (selectedRestaurant?.id === id && data && data[0]) {
-      setSelectedRestaurant(data[0]);
+      setSelectedRestaurant(mapRestaurantFromDb(data[0]));
     }
   };
 
