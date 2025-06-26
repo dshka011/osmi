@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Plus, Edit3, Trash2, Menu, Eye, EyeOff, GripVertical } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { MenuCategory } from '../../types';
 
 const CategoryManager: React.FC = () => {
   const { t } = useLanguage();
+  const { showSuccess, showError } = useNotifications();
   const { 
     selectedRestaurant,
     createCategory,
@@ -24,24 +26,28 @@ const CategoryManager: React.FC = () => {
 
   const categories = selectedRestaurant ? getRestaurantCategories(selectedRestaurant.id) : [];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedRestaurant) return;
-
-    if (editingCategory) {
-      updateCategory(editingCategory.id, formData);
-    } else {
-      createCategory({
-        restaurantId: selectedRestaurant.id,
-        name: formData.name,
-        description: formData.description,
-        position: categories.length,
-        isVisible: true
-      });
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, formData);
+        showSuccess('Категория обновлена', 'Категория успешно обновлена');
+      } else {
+        await createCategory({
+          restaurantId: selectedRestaurant!.id,
+          name: formData.name,
+          description: formData.description,
+          position: categories.length,
+          isVisible: true
+        });
+        showSuccess('Категория создана', 'Новая категория успешно добавлена');
+      }
+      resetForm();
+      setIsFormOpen(false);
+    } catch (error) {
+      showError('Ошибка сохранения', error instanceof Error ? error.message : 'Не удалось сохранить категорию');
     }
-    
-    resetForm();
   };
 
   const resetForm = () => {
@@ -59,14 +65,19 @@ const CategoryManager: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (category: MenuCategory) => {
+  const handleDelete = async (category: MenuCategory) => {
     const itemCount = getCategoryItems(category.id).length;
-    const message = itemCount > 0 
+    const message = itemCount > 0
       ? t('category.delete.confirmWithItems', { name: category.name, count: itemCount })
       : t('category.delete.confirm', { name: category.name });
-      
+    
     if (window.confirm(message)) {
-      deleteCategory(category.id);
+      try {
+        await deleteCategory(category.id);
+        showSuccess('Категория удалена', 'Категория успешно удалена');
+      } catch (error) {
+        showError('Ошибка удаления', error instanceof Error ? error.message : 'Не удалось удалить категорию');
+      }
     }
   };
 

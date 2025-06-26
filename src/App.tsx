@@ -2,6 +2,7 @@ import React from 'react';
 import { AppProvider } from './contexts/AppContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import Dashboard from './components/Layout/Dashboard';
 import AuthPage from './components/Auth/AuthPage';
 
@@ -24,11 +25,13 @@ function AppContent() {
   }
 
   return (
-    <LanguageProvider>
-      <AppProvider>
-        <Dashboard />
-      </AppProvider>
-    </LanguageProvider>
+    <NotificationProvider>
+      <LanguageProvider>
+        <AppProvider>
+          <Dashboard />
+        </AppProvider>
+      </LanguageProvider>
+    </NotificationProvider>
   );
 }
 

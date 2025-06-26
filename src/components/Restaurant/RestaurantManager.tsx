@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Plus, Edit3, Trash2, Store, Phone, Mail, MapPin, Globe, QrCode, Link2, Clock, Camera, X, Upload, Download } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { Restaurant, CURRENCIES, DEFAULT_WORKING_HOURS, WorkingHours, DAY_NAMES } from '../../types';
 
 const RestaurantManager: React.FC = () => {
   const { t } = useLanguage();
+  const { showSuccess, showError } = useNotifications();
   const { 
     restaurants, 
     selectedRestaurant, 
@@ -96,19 +98,19 @@ const RestaurantManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
-    setFormLoading(true);
+    
     try {
       if (editingRestaurant) {
         await updateRestaurant(editingRestaurant.id, formData);
+        showSuccess('Ресторан обновлен', 'Данные ресторана успешно сохранены');
       } else {
         await createRestaurant(formData);
+        showSuccess('Ресторан создан', 'Новый ресторан успешно добавлен');
       }
       resetForm();
-    } catch (err: any) {
-      setFormError(err.message || 'Ошибка при создании ресторана');
-    } finally {
-      setFormLoading(false);
+      setIsFormOpen(false);
+    } catch (error) {
+      showError('Ошибка сохранения', error instanceof Error ? error.message : 'Не удалось сохранить ресторан');
     }
   };
 
@@ -150,16 +152,21 @@ const RestaurantManager: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (restaurant: Restaurant) => {
+  const handleDelete = async (restaurant: Restaurant) => {
     if (window.confirm(t('restaurant.delete.confirm', { name: restaurant.name }))) {
-      deleteRestaurant(restaurant.id);
+      try {
+        await deleteRestaurant(restaurant.id);
+        showSuccess('Ресторан удален', 'Ресторан успешно удален из системы');
+      } catch (error) {
+        showError('Ошибка удаления', error instanceof Error ? error.message : 'Не удалось удалить ресторан');
+      }
     }
   };
 
   const copyMenuLink = (restaurantId: string) => {
     const url = getPublicMenuUrl(restaurantId);
     navigator.clipboard.writeText(url);
-    alert(t('restaurant.linkCopied'));
+    showSuccess(t('restaurant.linkCopied'));
   };
 
   const handleQRCode = async (restaurant: Restaurant) => {
@@ -169,7 +176,7 @@ const RestaurantManager: React.FC = () => {
       setQRCodeData(qrCode);
       setIsQRModalOpen(true);
     } catch (error) {
-      alert(t('qr.error'));
+      showError(t('qr.error'));
     }
   };
 
@@ -196,17 +203,18 @@ const RestaurantManager: React.FC = () => {
     if (!csvFile || !selectedRestaurant) return;
 
     try {
-      setCSVImportStatus('Importing...');
+      setCSVImportStatus(t('restaurant.csvImport.importing'));
       const csvContent = await csvFile.text();
       await importMenuFromCSV(selectedRestaurant.id, csvContent);
-      setCSVImportStatus(t('restaurant.csvImport.success'));
+      showSuccess('Импорт завершен', 'Меню успешно импортировано из CSV файла');
       setCSVFile(null);
       setTimeout(() => {
         setIsCSVImportOpen(false);
         setCSVImportStatus('');
       }, 2000);
     } catch (error) {
-      setCSVImportStatus(error instanceof Error ? error.message : t('restaurant.csvImport.error'));
+      showError('Ошибка импорта', error instanceof Error ? error.message : 'Не удалось импортировать меню');
+      setCSVImportStatus('');
     }
   };
 

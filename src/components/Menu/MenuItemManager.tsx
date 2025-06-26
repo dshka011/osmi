@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Plus, Edit3, Trash2, Eye, EyeOff, GripVertical, DollarSign, Tag, Camera, X } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { MenuItem, MenuCategory } from '../../types';
 
 const MenuItemManager: React.FC = () => {
   const { t } = useLanguage();
+  const { showSuccess, showError } = useNotifications();
   const { 
     selectedRestaurant,
     createMenuItem,
@@ -50,7 +52,7 @@ const MenuItemManager: React.FC = () => {
     setFormData(prev => ({ ...prev, image: '' }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedRestaurant) return;
@@ -63,28 +65,34 @@ const MenuItemManager: React.FC = () => {
 
     const existingItems = getCategoryItems(categoryId);
 
-    if (editingItem) {
-      updateMenuItem(editingItem.id, {
-        name: formData.name,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-        image: formData.image || undefined
-      });
-    } else {
-      createMenuItem({
-        categoryId,
-        name: formData.name,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-        image: formData.image || undefined,
-        isVisible: true,
-        position: existingItems.length
-      });
+    try {
+      if (editingItem) {
+        await updateMenuItem(editingItem.id, {
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+          image: formData.image || undefined
+        });
+        showSuccess('Блюдо обновлено', 'Блюдо успешно обновлено');
+      } else {
+        await createMenuItem({
+          categoryId,
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+          image: formData.image || undefined,
+          isVisible: true,
+          position: existingItems.length
+        });
+        showSuccess('Блюдо добавлено', 'Блюдо успешно добавлено в меню');
+      }
+      
+      resetForm();
+    } catch (error) {
+      showError('Ошибка сохранения', error instanceof Error ? error.message : 'Не удалось сохранить блюдо');
     }
-    
-    resetForm();
   };
 
   const resetForm = () => {
@@ -108,14 +116,27 @@ const MenuItemManager: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (item: MenuItem) => {
+  const handleDelete = async (item: MenuItem) => {
     if (window.confirm(t('menuItem.delete.confirm', { name: item.name }))) {
-      deleteMenuItem(item.id);
+      try {
+        await deleteMenuItem(item.id);
+        showSuccess('Блюдо удалено', 'Блюдо успешно удалено из меню');
+      } catch (error) {
+        showError('Ошибка удаления', error instanceof Error ? error.message : 'Не удалось удалить блюдо');
+      }
     }
   };
 
-  const toggleVisibility = (item: MenuItem) => {
-    updateMenuItem(item.id, { isVisible: !item.isVisible });
+  const toggleVisibility = async (item: MenuItem) => {
+    try {
+      await updateMenuItem(item.id, { isVisible: !item.isVisible });
+      showSuccess(
+        item.isVisible ? 'Блюдо скрыто' : 'Блюдо показано',
+        item.isVisible ? 'Блюдо скрыто из публичного меню' : 'Блюдо добавлено в публичное меню'
+      );
+    } catch (error) {
+      showError('Ошибка изменения видимости', error instanceof Error ? error.message : 'Не удалось изменить видимость блюда');
+    }
   };
 
   const openAddForm = (categoryId?: string) => {
