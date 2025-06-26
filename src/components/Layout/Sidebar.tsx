@@ -32,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
   };
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
+    <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col md:static md:h-full md:w-64 md:block hidden">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">

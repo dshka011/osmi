@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import supabase from '../../supabaseClient';
-import { Restaurant, MenuCategory, MenuItem } from '../../types';
+import { Restaurant, MenuCategory, MenuItem, DAY_NAMES } from '../../types';
 import { MapPin, Phone, Mail, Globe, Clock, Tag } from 'lucide-react';
-import { useAppContext } from '../../contexts/AppContext';
 
 interface PublicMenuProps {
   restaurantId?: string;
@@ -17,8 +16,7 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { getDefaultFoodImage, formatWorkingHours } = useAppContext();
-  const [showAllHours, setShowAllHours] = useState(false);
+  const [showFullSchedule, setShowFullSchedule] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,6 +75,19 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
     return `${price} ${currency}`;
   };
 
+  // --- Вспомогательные для расписания ---
+  const getTodayKey = () => {
+    const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    return days[new Date().getDay()];
+  };
+  const todayKey = getTodayKey();
+  const today = restaurant?.workingHours ? (restaurant.workingHours as any)[todayKey] as import('../../types').DayHours : undefined;
+  const fullSchedule = restaurant?.workingHours ? (Object.entries(restaurant.workingHours) as [keyof typeof DAY_NAMES, import('../../types').DayHours][]) : [];
+
+  // --- Заглушка для фото блюда ---
+  const getDefaultFoodImage = (dishName: string) =>
+    `https://source.unsplash.com/400x300/?food,${encodeURIComponent(dishName)}`;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -103,13 +114,6 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
 
   const currency = restaurant.currency || 'RUB';
   
-  // --- часы работы ---
-  const today = new Date().toLocaleDateString('ru-RU', { weekday: 'long' }).toLowerCase();
-  const dayKey = Object.keys(restaurant.workingHours).find(
-    d => today.includes(d.slice(0, 3))
-  ) as keyof typeof restaurant.workingHours;
-  const todayHours = restaurant.workingHours[dayKey];
-
   if (categories.length === 0) {
     return (
       <div className="p-6">
@@ -137,27 +141,34 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{restaurant.name}</h1>
             <p className="text-gray-600 mb-2">{restaurant.description}</p>
             {restaurant.address && (
-              <p className="text-gray-500 text-sm mb-1">{restaurant.address}</p>
+              <p className="text-gray-500 text-sm mb-1 flex items-center justify-center md:justify-start"><MapPin className="w-4 h-4 mr-1" />{restaurant.address}</p>
             )}
             {restaurant.phone && (
-              <p className="text-gray-500 text-sm">{restaurant.phone}</p>
+              <p className="text-gray-500 text-sm flex items-center justify-center md:justify-start"><Phone className="w-4 h-4 mr-1" />{restaurant.phone}</p>
             )}
             {/* Часы работы */}
-            <div className="mt-3 flex items-center gap-2 justify-center md:justify-start">
-              <Clock className="w-5 h-5 text-emerald-600" />
-              <span className="text-sm text-gray-700 cursor-pointer select-none" onClick={() => setShowAllHours(v => !v)}>
-                {todayHours?.isOpen
-                  ? `Сегодня: ${todayHours.openTime}–${todayHours.closeTime}`
-                  : 'Сегодня: закрыто'}
-                <span className="ml-2 text-xs text-blue-500 underline">{showAllHours ? 'Скрыть' : 'Показать все'}</span>
-              </span>
-            </div>
-            {showAllHours && (
-              <div className="mt-2 bg-gray-50 rounded-lg p-3 border border-emerald-100 text-sm text-gray-700 shadow-sm">
-                {Object.entries(restaurant.workingHours).map(([day, hours]) => (
-                  <div key={day} className="flex justify-between py-0.5">
-                    <span className="font-medium">{day[0].toUpperCase() + day.slice(1)}</span>
-                    <span>{hours.isOpen ? `${hours.openTime}–${hours.closeTime}` : 'Закрыто'}</span>
+            {today && (
+              <div className="mt-2 flex items-center justify-center md:justify-start">
+                <Clock className="w-4 h-4 mr-1 text-emerald-600" />
+                <span className="text-sm text-gray-700">
+                  {today.isOpen
+                    ? `Сегодня: ${today.openTime}–${today.closeTime}`
+                    : 'Сегодня выходной'}
+                </span>
+                <button
+                  className="ml-2 text-xs text-blue-600 underline hover:no-underline"
+                  onClick={() => setShowFullSchedule((v) => !v)}
+                >
+                  {showFullSchedule ? 'Скрыть' : 'Показать все'}
+                </button>
+              </div>
+            )}
+            {showFullSchedule && (
+              <div className="mt-2 bg-gray-50 rounded-lg p-2 text-xs text-gray-700 border border-gray-100">
+                {fullSchedule.map(([day, hours]) => (
+                  <div key={day} className="flex justify-between">
+                    <span>{DAY_NAMES[day as keyof typeof DAY_NAMES]}</span>
+                    <span>{hours.isOpen ? `${hours.openTime}–${hours.closeTime}` : 'Выходной'}</span>
                   </div>
                 ))}
               </div>
@@ -173,7 +184,7 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
               {getCategoryItems(cat.id).map((item) => (
                 <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col">
                   <img
-                    src={item.image || getDefaultFoodImage(item.name)}
+                    src={item.image && item.image.trim() ? item.image : getDefaultFoodImage(item.name)}
                     alt={item.name}
                     className="w-full h-32 object-cover rounded-lg mb-2 border border-gray-200"
                   />

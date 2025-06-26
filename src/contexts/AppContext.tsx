@@ -89,16 +89,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           email: 'demo@bellavista.ru',
           address: 'ул. Примерная, 1, Москва',
           website: 'https://demo.bellavista.ru',
-          currency: 'RUB',
+    currency: 'RUB',
           working_hours: {
-            monday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
-            tuesday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
-            wednesday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
-            thursday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
-            friday: { isOpen: true, openTime: '11:00', closeTime: '00:00' },
-            saturday: { isOpen: true, openTime: '12:00', closeTime: '00:00' },
-            sunday: { isOpen: true, openTime: '12:00', closeTime: '22:00' }
-          },
+      monday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
+      tuesday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
+      wednesday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
+      thursday: { isOpen: true, openTime: '11:00', closeTime: '23:00' },
+      friday: { isOpen: true, openTime: '11:00', closeTime: '00:00' },
+      saturday: { isOpen: true, openTime: '12:00', closeTime: '00:00' },
+      sunday: { isOpen: true, openTime: '12:00', closeTime: '22:00' }
+    },
           user_id: userId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -262,7 +262,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    if (Object.prototype.hasOwnProperty.call(dbData, 'workingHours')) delete dbData.workingHours;
+    if ('workingHours' in dbData) delete dbData.workingHours;
     const { data, error } = await supabase
       .from('restaurants')
       .insert([dbData])
@@ -494,7 +494,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
-  const contextValue: AppContextType & { getDefaultFoodImage: typeof getDefaultFoodImage } = {
+  const contextValue: AppContextType = {
     restaurants,
     categories,
     menuItems,
@@ -518,8 +518,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getCurrencySymbol,
     formatPrice,
     formatWorkingHours,
-    generateQRCode,
-    getDefaultFoodImage
+    generateQRCode
   };
 
   if (loading) return <div>Загрузка...</div>;
