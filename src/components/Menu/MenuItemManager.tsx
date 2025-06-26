@@ -261,7 +261,7 @@ const MenuItemManager: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price * ({currency})
+                  {t('menuItem.price.required', { currency })}
                 </label>
                 <input
                   type="number"
@@ -277,14 +277,14 @@ const MenuItemManager: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tags
+                  {t('common.tags')}
                 </label>
                 <input
                   type="text"
                   value={formData.tags}
                   onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="vegan, gluten-free, spicy (separate with commas)"
+                  placeholder={t('menuItem.tags.placeholder')}
                 />
               </div>
               
@@ -293,14 +293,14 @@ const MenuItemManager: React.FC = () => {
                   type="submit"
                   className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  {editingItem ? 'Update' : 'Create'} Item
+                  {editingItem ? t('menuItem.update') : t('menuItem.create')}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
                   className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -320,11 +320,11 @@ const MenuItemManager: React.FC = () => {
                   <div className="flex items-center space-x-3">
                     <h2 className="text-lg font-semibold text-gray-900">{category.name}</h2>
                     <span className="text-sm text-gray-500">
-                      {items.length} item{items.length !== 1 ? 's' : ''}
+                      {items.length === 1 ? t('category.items.single', { count: items.length }) : t('category.items', { count: items.length })}
                     </span>
                     {!category.isVisible && (
                       <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full">
-                        Hidden
+                        {t('category.hiddenFromMenu')}
                       </span>
                     )}
                   </div>
@@ -333,7 +333,7 @@ const MenuItemManager: React.FC = () => {
                     className="inline-flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Add Item
+                    {t('menuItem.addToCategory')}
                   </button>
                 </div>
               </div>
@@ -376,7 +376,7 @@ const MenuItemManager: React.FC = () => {
                             </span>
                             {!item.isVisible && (
                               <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full">
-                                Hidden
+                                {t('common.hidden')}
                               </span>
                             )}
                           </div>
@@ -415,7 +415,7 @@ const MenuItemManager: React.FC = () => {
                               ? 'text-green-600 bg-green-50 hover:bg-green-100'
                               : 'text-gray-400 bg-gray-100 hover:bg-gray-200'
                           }`}
-                          title={item.isVisible ? 'Hide from menu' : 'Show in menu'}
+                          title={item.isVisible ? t('category.hideFromMenu') : t('category.showInMenu')}
                         >
                           {item.isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         </button>
@@ -438,12 +438,12 @@ const MenuItemManager: React.FC = () => {
 
                 {items.length === 0 && (
                   <div className="p-8 text-center">
-                    <p className="text-gray-500 text-sm">No items in this category yet.</p>
+                    <p className="text-gray-500 text-sm">{t('menuItem.noItems')}</p>
                     <button
                       onClick={() => openAddForm(category.id)}
                       className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
-                      Add your first item
+                      {t('menuItem.addFirst')}
                     </button>
                   </div>
                 )}
