@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://pdwmcfthiwpjuillrkci.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkd21jZnRoaXdwanVpbGxya2NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4ODgxNDcsImV4cCI6MjA2NjQ2NDE0N30.meQXDeKvWvkMBfj5pZuqXgAMQPisu0IrF-wen44erUk';
+// Получаем переменные окружения
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Проверяем, что переменные заданы
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Supabase URL and Anon Key must be defined in .env file");
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
