@@ -1,30 +1,99 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import supabase from '../../supabaseClient';
+import { Restaurant, MenuCategory, MenuItem } from '../../types';
 import { MapPin, Phone, Mail, Globe, Clock, Tag } from 'lucide-react';
-import { useAppContext } from '../../contexts/AppContext';
 
 const PublicMenu: React.FC = () => {
-  const { 
-    selectedRestaurant,
-    getRestaurantCategories,
-    getCategoryItems,
-    formatPrice,
-    formatWorkingHours
-  } = useAppContext();
+  const { restaurantId } = useParams<{ restaurantId: string }>();
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  if (!selectedRestaurant) {
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        // Получаем ресторан
+        const { data: restData, error: restError } = await supabase
+          .from('restaurants')
+          .select('*')
+          .eq('id', restaurantId)
+          .single();
+        if (restError || !restData) throw new Error('Ресторан не найден');
+        setRestaurant({
+          ...restData,
+          workingHours: restData.working_hours,
+          createdAt: new Date(restData.created_at),
+          updatedAt: new Date(restData.updated_at),
+        });
+        // Получаем категории
+        const { data: catData, error: catError } = await supabase
+          .from('menu_categories')
+          .select('*')
+          .eq('restaurant_id', restaurantId)
+          .order('position', { ascending: true });
+        if (catError) throw catError;
+        setCategories(catData || []);
+        // Получаем блюда
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('menu_items')
+          .select('*')
+          .in('category_id', (catData || []).map((c: any) => c.id))
+          .order('position', { ascending: true });
+        if (itemsError) throw itemsError;
+        setMenuItems(itemsData || []);
+      } catch (e: any) {
+        setError(e.message || 'Ошибка загрузки меню');
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (restaurantId) fetchData();
+  }, [restaurantId]);
+
+  const getCategoryItems = (categoryId: string) =>
+    menuItems.filter((item) => {
+      // @ts-ignore
+      return (item.categoryId ?? item['category_id']) === categoryId;
+    });
+
+  // Локальная функция для форматирования цены
+  const formatPrice = (price: number, currency: string) => {
+    if (currency === 'RUB') return `${price.toFixed(0)} ₽`;
+    if (currency === 'USD') return `$${price.toFixed(2)}`;
+    if (currency === 'EUR') return `€${price.toFixed(2)}`;
+    return `${price} ${currency}`;
+  };
+
+  if (loading) {
     return (
-      <div className="p-6">
-        <div className="text-center py-12">
-          <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No restaurant selected</h3>
-          <p className="text-gray-500">Please select a restaurant first to preview the menu.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Загрузка меню...</p>
         </div>
       </div>
     );
   }
 
-  const categories = getRestaurantCategories(selectedRestaurant.id).filter(cat => cat.isVisible);
-  const currency = selectedRestaurant.currency || 'RUB';
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-600 text-lg font-semibold mb-2">{error}</p>
+          <p className="text-gray-500">Проверьте ссылку или попробуйте позже.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!restaurant) return null;
+
+  const currency = restaurant.currency || 'RUB';
   
   if (categories.length === 0) {
     return (
@@ -39,157 +108,71 @@ const PublicMenu: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          {/* Restaurant Photo */}
-          {selectedRestaurant.photo && (
-            <div className="mb-6">
-              <img
-                src={selectedRestaurant.photo}
-                alt={selectedRestaurant.name}
-                className="w-full h-64 object-cover rounded-xl shadow-lg"
-              />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-8 px-2 md:px-0">
+      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-10 mb-8">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
+          {restaurant.photo && (
+            <img
+              src={restaurant.photo}
+              alt={restaurant.name}
+              className="w-full md:w-56 h-40 object-cover rounded-xl border border-gray-200"
+            />
           )}
-
-          <div className="text-center mb-6">
-            {selectedRestaurant.logo ? (
-              <img
-                src={selectedRestaurant.logo}
-                alt={`${selectedRestaurant.name} logo`}
-                className="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-lg"
-              />
-            ) : (
-              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-white">
-                  {selectedRestaurant.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
+          <div className="flex-1 text-center md:text-left">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{restaurant.name}</h1>
+            <p className="text-gray-600 mb-2">{restaurant.description}</p>
+            {restaurant.address && (
+              <p className="text-gray-500 text-sm mb-1">{restaurant.address}</p>
             )}
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {selectedRestaurant.name}
-            </h1>
-            {selectedRestaurant.description && (
-              <p className="text-lg text-gray-600 mb-4">
-                {selectedRestaurant.description}
-              </p>
+            {restaurant.phone && (
+              <p className="text-gray-500 text-sm">{restaurant.phone}</p>
             )}
           </div>
-
-          {/* Restaurant Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            {selectedRestaurant.address && (
-              <div className="flex items-center space-x-2 text-gray-600">
-                <MapPin className="w-4 h-4 text-emerald-600" />
-                <span>{selectedRestaurant.address}</span>
-              </div>
-            )}
-            {selectedRestaurant.phone && (
-              <div className="flex items-center space-x-2 text-gray-600">
-                <Phone className="w-4 h-4 text-emerald-600" />
-                <span>{selectedRestaurant.phone}</span>
-              </div>
-            )}
-            {selectedRestaurant.email && (
-              <div className="flex items-center space-x-2 text-gray-600">
-                <Mail className="w-4 h-4 text-emerald-600" />
-                <span>{selectedRestaurant.email}</span>
-              </div>
-            )}
-            {selectedRestaurant.website && (
-              <div className="flex items-center space-x-2 text-gray-600">
-                <Globe className="w-4 h-4 text-emerald-600" />
-                <span>{selectedRestaurant.website}</span>
-              </div>
-            )}
-            {selectedRestaurant.workingHours && (
-              <div className="flex items-start space-x-2 text-gray-600 md:col-span-2">
-                <Clock className="w-4 h-4 text-emerald-600 mt-0.5" />
-                <span className="leading-relaxed">{formatWorkingHours(selectedRestaurant.workingHours)}</span>
-              </div>
-            )}
-          </div>
+        </div>
+        <div className="flex flex-col md:flex-row md:justify-between items-center gap-2 mb-4">
+          <span className="text-sm text-gray-400">Публичное меню</span>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+            }}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            Скопировать ссылку
+          </button>
         </div>
       </div>
-
-      {/* Menu */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="space-y-8">
-          {categories.map((category) => {
-            const items = getCategoryItems(category.id).filter(item => item.isVisible);
-            
-            if (items.length === 0) return null;
-
-            return (
-              <div key={category.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4">
-                  <h2 className="text-xl font-semibold text-white">{category.name}</h2>
-                  {category.description && (
-                    <p className="text-emerald-100 text-sm mt-1">{category.description}</p>
+      <div className="max-w-2xl mx-auto">
+        {categories.map((cat) => (
+          <div key={cat.id} className="mb-8">
+            <h2 className="text-2xl font-semibold text-emerald-700 mb-4 border-b border-emerald-100 pb-1">{cat.name}</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {getCategoryItems(cat.id).map((item) => (
+                <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col">
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-32 object-cover rounded-lg mb-2 border border-gray-200"
+                    />
                   )}
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">{item.name}</h3>
+                    <p className="text-gray-600 text-sm mb-2">{item.description}</p>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-emerald-700 font-semibold text-lg">{formatPrice(item.price, currency)}</span>
+                    {item.tags && item.tags.length > 0 && (
+                      <span className="text-xs text-gray-400 bg-gray-100 rounded px-2 py-1 ml-2">{item.tags.join(', ')}</span>
+                    )}
+                  </div>
                 </div>
-
-                <div className="divide-y divide-gray-200">
-                  {items.map((item) => (
-                    <div key={item.id} className="p-6 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1 pr-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <h3 className="text-lg font-medium text-gray-900 flex-1">
-                              {item.name}
-                            </h3>
-                            <span className="text-lg font-semibold text-emerald-600 ml-4">
-                              {formatPrice(item.price, currency)}
-                            </span>
-                          </div>
-                          
-                          {item.description && (
-                            <p className="text-gray-600 mb-3 text-sm leading-relaxed">
-                              {item.description}
-                            </p>
-                          )}
-                          
-                          {item.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {item.tags.map((tag, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full"
-                                >
-                                  <Tag className="w-3 h-3 mr-1" />
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        
-                        {item.image && (
-                          <div className="w-32 h-32 flex-shrink-0 ml-4">
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-full object-cover rounded-lg shadow-sm"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t border-gray-200">
-          <p className="text-gray-500 text-sm">
-            Powered by <span className="font-semibold text-emerald-600">Osmi</span> - Digital Menu Platform
-          </p>
-        </div>
+              ))}
+              {getCategoryItems(cat.id).length === 0 && (
+                <div className="text-gray-400 italic">Нет блюд в этой категории</div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
