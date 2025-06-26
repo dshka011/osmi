@@ -1,11 +1,9 @@
 import React from 'react';
-import { AppProvider } from './contexts/AppContext';
-import { LanguageProvider } from './contexts/LanguageContext';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Dashboard from './components/Layout/Dashboard';
 import AuthPage from './components/Auth/AuthPage';
+import { useAuth } from './contexts/AuthContext';
 
-function AppContent() {
+function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -23,21 +21,7 @@ function AppContent() {
     return <AuthPage />;
   }
 
-  return (
-    <LanguageProvider>
-      <AppProvider>
-        <Dashboard />
-      </AppProvider>
-    </LanguageProvider>
-  );
-}
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
+  return <Dashboard />;
 }
 
 export default App;
