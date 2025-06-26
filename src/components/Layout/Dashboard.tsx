@@ -5,9 +5,11 @@ import CategoryManager from '../Menu/CategoryManager';
 import MenuItemManager from '../Menu/MenuItemManager';
 import PublicMenu from '../Menu/PublicMenu';
 import Settings from './Settings';
+import { useAppContext } from '../../contexts/AppContext';
 
 const Dashboard: React.FC = () => {
   const [activeView, setActiveView] = useState('restaurants');
+  const { selectedRestaurant } = useAppContext();
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -18,7 +20,7 @@ const Dashboard: React.FC = () => {
       case 'menu-items':
         return <MenuItemManager />;
       case 'preview':
-        return <PublicMenu />;
+        return selectedRestaurant ? <PublicMenu restaurantId={selectedRestaurant.id} /> : <div className="p-8 text-center text-gray-400">Выберите ресторан для предпросмотра меню</div>;
       case 'settings':
         return <Settings />;
       default:

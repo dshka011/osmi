@@ -4,8 +4,13 @@ import supabase from '../../supabaseClient';
 import { Restaurant, MenuCategory, MenuItem } from '../../types';
 import { MapPin, Phone, Mail, Globe, Clock, Tag } from 'lucide-react';
 
-const PublicMenu: React.FC = () => {
-  const { restaurantId } = useParams<{ restaurantId: string }>();
+interface PublicMenuProps {
+  restaurantId?: string;
+}
+
+const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId }) => {
+  const { restaurantId: urlRestaurantId } = useParams<{ restaurantId: string }>();
+  const restaurantId = propRestaurantId || urlRestaurantId;
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
