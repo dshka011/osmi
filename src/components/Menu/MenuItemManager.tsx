@@ -230,7 +230,7 @@ const MenuItemManager: React.FC = () => {
                   ) : (
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                       <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 mb-2">Upload a photo of your dish</p>
+                      <p className="text-sm text-gray-600 mb-2">{t('menuItem.photo.description')}</p>
                       <label className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
                         <Camera className="w-4 h-4 mr-2" />
                         Choose Photo
@@ -255,7 +255,7 @@ const MenuItemManager: React.FC = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
-                  placeholder="Describe your delicious dish..."
+                  placeholder={t('menuItem.description.placeholder')}
                 />
               </div>
               

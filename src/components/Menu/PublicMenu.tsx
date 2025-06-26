@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import supabase from '../../supabaseClient';
 import { Restaurant, MenuCategory, MenuItem, DAY_NAMES } from '../../types';
 import { MapPin, Phone, Mail, Globe, Clock, Tag } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface PublicMenuProps {
   restaurantId?: string;
@@ -17,6 +18,7 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showFullSchedule, setShowFullSchedule] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -119,8 +121,8 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
       <div className="p-6">
         <div className="text-center py-12">
           <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No menu available</h3>
-          <p className="text-gray-500">Add some categories and menu items to see the public menu preview.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('publicMenu.noMenu')}</h3>
+          <p className="text-gray-500">{t('publicMenu.noMenu.description')}</p>
         </div>
       </div>
     );

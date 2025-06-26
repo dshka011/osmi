@@ -9,12 +9,14 @@ import PublicMenu from '../Menu/PublicMenu';
 import Settings from './Settings';
 import { useAppContext } from '../../contexts/AppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const Dashboard: React.FC = () => {
   const [activeView, setActiveView] = useState('restaurants');
   const [isRestaurantModalOpen, setIsRestaurantModalOpen] = useState(false);
   const isMobile = useIsMobile();
   const { selectedRestaurant, restaurants, selectRestaurant } = useAppContext();
+  const { t } = useLanguage();
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -25,7 +27,7 @@ const Dashboard: React.FC = () => {
       case 'menu-items':
         return <MenuItemManager />;
       case 'preview':
-        return selectedRestaurant ? <PublicMenu restaurantId={selectedRestaurant.id} /> : <div className="p-8 text-center text-gray-400">Выберите ресторан для предпросмотра меню</div>;
+        return selectedRestaurant ? <PublicMenu restaurantId={selectedRestaurant.id} /> : <div className="p-8 text-center text-gray-400">{t('publicMenu.noRestaurant.description')}</div>;
       case 'settings':
         return <Settings />;
       default:

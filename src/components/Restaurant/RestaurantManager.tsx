@@ -151,7 +151,7 @@ const RestaurantManager: React.FC = () => {
   };
 
   const handleDelete = (restaurant: Restaurant) => {
-    if (window.confirm(`Are you sure you want to delete "${restaurant.name}"? This will also delete all associated categories and menu items.`)) {
+    if (window.confirm(t('restaurant.delete.confirm', { name: restaurant.name }))) {
       deleteRestaurant(restaurant.id);
     }
   };
@@ -159,7 +159,7 @@ const RestaurantManager: React.FC = () => {
   const copyMenuLink = (restaurantId: string) => {
     const url = getPublicMenuUrl(restaurantId);
     navigator.clipboard.writeText(url);
-    alert('Menu link copied to clipboard!');
+    alert(t('restaurant.linkCopied'));
   };
 
   const handleQRCode = async (restaurant: Restaurant) => {
@@ -169,7 +169,7 @@ const RestaurantManager: React.FC = () => {
       setQRCodeData(qrCode);
       setIsQRModalOpen(true);
     } catch (error) {
-      alert('Failed to generate QR code');
+      alert(t('qr.error'));
     }
   };
 
@@ -186,9 +186,9 @@ const RestaurantManager: React.FC = () => {
     const file = e.target.files?.[0];
     if (file && file.type === 'text/csv') {
       setCSVFile(file);
-      setCSVImportStatus('');
+      setCSVImportStatus(t('restaurant.csvImport.selectFile'));
     } else {
-      setCSVImportStatus('Please select a valid CSV file');
+      setCSVImportStatus(t('restaurant.csvImport.selectFile'));
     }
   };
 
@@ -199,14 +199,14 @@ const RestaurantManager: React.FC = () => {
       setCSVImportStatus('Importing...');
       const csvContent = await csvFile.text();
       await importMenuFromCSV(selectedRestaurant.id, csvContent);
-      setCSVImportStatus('Menu imported successfully!');
+      setCSVImportStatus(t('restaurant.csvImport.success'));
       setCSVFile(null);
       setTimeout(() => {
         setIsCSVImportOpen(false);
         setCSVImportStatus('');
       }, 2000);
     } catch (error) {
-      setCSVImportStatus(error instanceof Error ? error.message : 'Import failed');
+      setCSVImportStatus(error instanceof Error ? error.message : t('restaurant.csvImport.error'));
     }
   };
 

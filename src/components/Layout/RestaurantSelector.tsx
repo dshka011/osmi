@@ -133,8 +133,8 @@ const RestaurantSelector: React.FC<RestaurantSelectorProps> = ({
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={() => {
-              // TODO: Добавить создание нового ресторана
-              console.log('Create new restaurant');
+              console.log(t('restaurant.add'));
+              onClose();
             }}
             className="w-full flex items-center justify-center space-x-2 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
