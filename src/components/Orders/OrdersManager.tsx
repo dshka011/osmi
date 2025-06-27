@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import supabase from '../../supabaseClient';
 import { useAppContext } from '../../contexts/AppContext';
 import { MenuCategory, MenuItem } from '../../types';
+import DashboardStats from './DashboardStats';
 
 interface Order {
   id: string;
@@ -67,6 +68,7 @@ const OrdersManager: React.FC = () => {
     <div className="p-6">
       <audio ref={audioRef} src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae1b2.mp3" preload="auto" />
       <h1 className="text-2xl font-bold mb-6">Заказы</h1>
+      {selectedRestaurant && <DashboardStats restaurantId={selectedRestaurant.id} />}
       {loading ? (
         <div className="text-center text-gray-500">Загрузка...</div>
       ) : orders.length === 0 ? (

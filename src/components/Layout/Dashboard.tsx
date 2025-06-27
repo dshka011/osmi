@@ -58,7 +58,6 @@ const Dashboard: React.FC = () => {
       
       {/* Основной контент */}
       <div className={`flex-1 overflow-auto ${isMobile ? 'pb-16' : ''}`}>
-        {selectedRestaurant && <DashboardStats restaurantId={selectedRestaurant.id} />}
         {renderActiveView()}
       </div>
       
