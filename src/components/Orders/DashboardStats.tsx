@@ -38,7 +38,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ restaurantId }) => {
   }, [restaurantId]);
 
   // Считаем метрики
-  const paidOrders = orders.filter(o => o.status !== 'cancelled');
+  const paidOrders = orders.filter(o => o.status !== 'cancelled' && Array.isArray(o.items) && o.items.every(i => typeof i.price === 'number' && typeof i.qty === 'number'));
   const totalRevenue = paidOrders.reduce(
     (sum, o) => sum + o.items.reduce((s, i) => s + i.price * i.qty, 0),
     0
@@ -62,6 +62,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ restaurantId }) => {
 
   if (loading) return <div className="p-6 text-gray-500">Загрузка метрик...</div>;
   if (error) return <div className="p-6 text-red-500">Ошибка: {error}</div>;
+  if (orderCount === 0) return <div className="p-6 text-gray-400">Нет данных для метрик</div>;
 
   return (
     <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">

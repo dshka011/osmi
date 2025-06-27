@@ -88,7 +88,6 @@ const OrdersManager: React.FC = () => {
                   {order.items.map((item, idx) => (
                     <li key={idx}>
                       {item.name} x{item.qty} — {item.price} ₽
-                      <span className="text-gray-400"> (итого: {item.price * item.qty} ₽)</span>
                     </li>
                   ))}
                 </ul>
