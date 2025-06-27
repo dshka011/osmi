@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { AppContextType, Restaurant, MenuCategory, MenuItem, CURRENCIES, DEFAULT_WORKING_HOURS, WorkingHours, DAY_NAMES } from '../types';
 import supabase from '../supabaseClient';
 import { useAuth } from './AuthContext';
+import { fromDbRestaurant, toDbRestaurant, fromDbCategory, toDbCategory, fromDbMenuItem, toDbMenuItem } from '../utils/dbMapping';
 
 const AppContext = createContext<AppContextType | null>(null);
 
@@ -27,52 +28,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Функции для преобразования данных из Supabase в формат фронта
-  function mapCategoryFromDb(db: any): MenuCategory {
-    return {
-      id: db.id,
-      restaurantId: db.restaurant_id,
-      name: db.name,
-      description: db.description,
-      position: db.position,
-      isVisible: db.is_visible,
-      createdAt: new Date(db.created_at),
-      updatedAt: new Date(db.updated_at),
-    };
-  }
-  function mapItemFromDb(db: any): MenuItem {
-    return {
-      id: db.id,
-      categoryId: db.category_id,
-      name: db.name,
-      description: db.description,
-      price: db.price,
-      image: db.image,
-      tags: db.tags,
-      isVisible: db.is_visible,
-      position: db.position,
-      createdAt: new Date(db.created_at),
-      updatedAt: new Date(db.updated_at),
-    };
-  }
-  function mapRestaurantFromDb(db: any): Restaurant {
-    return {
-      id: db.id,
-      name: db.name,
-      description: db.description,
-      logo: db.logo,
-      photo: db.photo,
-      phone: db.phone,
-      email: db.email,
-      address: db.address,
-      website: db.website,
-      currency: db.currency,
-      workingHours: db.working_hours,
-      createdAt: new Date(db.created_at),
-      updatedAt: new Date(db.updated_at),
-    };
-  }
 
   // Функция для создания тестовых данных
   async function createDemoRestaurant(userId: string) {
@@ -183,7 +138,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             logo: restaurant.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop',
             photo: restaurant.photo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop'
           }));
-          setRestaurants(demoRestaurantsWithFixedImages.map(mapRestaurantFromDb));
+          setRestaurants(demoRestaurantsWithFixedImages.map(fromDbRestaurant));
           allRestaurants = demoRestaurantsWithFixedImages;
         } else {
           const restaurantsWithFixedImages = (restaurantsData || []).map(restaurant => ({
@@ -191,7 +146,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             logo: restaurant.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop',
             photo: restaurant.photo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop'
           }));
-          setRestaurants(restaurantsWithFixedImages.map(mapRestaurantFromDb));
+          setRestaurants(restaurantsWithFixedImages.map(fromDbRestaurant));
           allRestaurants = restaurantsWithFixedImages;
         }
         // Категории
@@ -199,23 +154,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           .from('menu_categories')
           .select('*');
         if (categoriesError) throw categoriesError;
-        setCategories((categoriesData || []).map(mapCategoryFromDb));
+        setCategories((categoriesData || []).map(fromDbCategory));
         // Пункты меню
         const { data: menuItemsData, error: menuItemsError } = await supabase
           .from('menu_items')
           .select('*');
         if (menuItemsError) throw menuItemsError;
-        const menuItemsWithFixedImages = (menuItemsData || []).map(item => ({
-          ...item,
-          image: item.image || getDefaultFoodImage(item.name)
-        }));
-        setMenuItems(menuItemsWithFixedImages.map(mapItemFromDb));
+        setMenuItems((menuItemsData || []).map(fromDbMenuItem));
         // По умолчанию выбираем первый ресторан
         if (allRestaurants.length > 0) {
-          setSelectedRestaurant(mapRestaurantFromDb(allRestaurants[0]));
+          setSelectedRestaurant(fromDbRestaurant(allRestaurants[0]));
         }
-      } catch (e: any) {
-        setError(e.message || 'Ошибка загрузки данных');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
       } finally {
         setLoading(false);
       }
@@ -255,36 +206,28 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // CRUD для ресторанов
   const createRestaurant = async (restaurantData: Omit<Restaurant, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user) throw new Error('Пользователь не авторизован');
-    const dbData = {
-      ...restaurantData,
-      user_id: user.id,
-      working_hours: restaurantData.workingHours,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+    const dbData = toDbRestaurant({ ...restaurantData, userId: user.id });
+    dbData.created_at = new Date().toISOString();
+    dbData.updated_at = new Date().toISOString();
     const { data, error } = await supabase
       .from('restaurants')
       .insert([dbData])
       .select();
     if (error) throw error;
-    setRestaurants(prev => [...prev, ...(data || []).map(mapRestaurantFromDb)]);
+    setRestaurants(prev => [...prev, ...(data || []).map(fromDbRestaurant)]);
   };
 
   const updateRestaurant = async (id: string, updates: Partial<Restaurant>) => {
-    const dbUpdates: any = { ...updates };
-    if ('workingHours' in updates) {
-      dbUpdates.working_hours = updates.workingHours;
-      delete dbUpdates.workingHours;
-    }
+    const dbUpdates = toDbRestaurant(updates);
     const { data, error } = await supabase
       .from('restaurants')
       .update(dbUpdates)
       .eq('id', id)
       .select();
     if (error) throw error;
-    setRestaurants(prev => prev.map(r => (r.id === id ? mapRestaurantFromDb(data[0]) : r)));
+    setRestaurants(prev => prev.map(r => (r.id === id ? fromDbRestaurant(data[0]) : r)));
     if (selectedRestaurant?.id === id && data && data[0]) {
-      setSelectedRestaurant(mapRestaurantFromDb(data[0]));
+      setSelectedRestaurant(fromDbRestaurant(data[0]));
     }
   };
 
@@ -312,46 +255,31 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   // CRUD для категорий
   const createCategory = async (categoryData: Omit<MenuCategory, 'id' | 'createdAt' | 'updatedAt'>) => {
-    // Преобразуем поля для базы
-    const dbData: any = {
-      ...categoryData,
-      restaurant_id: categoryData.restaurantId,
-      is_visible: categoryData.isVisible,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    // Удаляем лишние поля
-    delete dbData.restaurantId;
-    delete dbData.isVisible;
+    const dbData = toDbCategory(categoryData);
+    dbData.created_at = new Date().toISOString();
+    dbData.updated_at = new Date().toISOString();
     const { data, error } = await supabase
       .from('menu_categories')
       .insert([dbData])
       .select();
     if (error) throw error;
-    setCategories(prev => [...prev, ...(data || []).map(mapCategoryFromDb)]);
+    setCategories(prev => [...prev, ...(data || []).map(fromDbCategory)]);
   };
 
   const updateCategory = async (id: string, updates: Partial<MenuCategory>) => {
-    const dbUpdates: any = { ...updates };
-    if ('restaurantId' in updates) {
-      dbUpdates.restaurant_id = updates.restaurantId;
-      delete dbUpdates.restaurantId;
+    const dbUpdates = toDbCategory(updates);
+    if ('updatedAt' in updates) {
+      dbUpdates.updated_at = new Date().toISOString();
     }
-    if ('isVisible' in updates) {
-      dbUpdates.is_visible = updates.isVisible;
-      delete dbUpdates.isVisible;
-    }
-    if ('createdAt' in updates) delete dbUpdates.createdAt;
-    if ('updatedAt' in updates) dbUpdates.updated_at = new Date().toISOString();
     const { data, error } = await supabase
       .from('menu_categories')
       .update(dbUpdates)
       .eq('id', id)
       .select();
     if (error) throw error;
-    setCategories(prev => prev.map(c => (c.id === id ? mapCategoryFromDb(data[0]) : c)));
+    setCategories(prev => prev.map(c => (c.id === id ? fromDbCategory(data[0]) : c)));
     if (selectedCategory?.id === id && data && data[0]) {
-      setSelectedCategory(mapCategoryFromDb(data[0]));
+      setSelectedCategory(fromDbCategory(data[0]));
     }
   };
 
@@ -374,42 +302,29 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   // CRUD для пунктов меню
   const createMenuItem = async (itemData: Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const dbData: any = {
-      ...itemData,
-      category_id: itemData.categoryId,
-      is_visible: itemData.isVisible,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    delete dbData.categoryId;
-    delete dbData.isVisible;
+    const dbData = toDbMenuItem(itemData);
+    dbData.created_at = new Date().toISOString();
+    dbData.updated_at = new Date().toISOString();
     const { data, error } = await supabase
       .from('menu_items')
       .insert([dbData])
       .select();
     if (error) throw error;
-    setMenuItems(prev => [...prev, ...(data || []).map(mapItemFromDb)]);
+    setMenuItems(prev => [...prev, ...(data || []).map(fromDbMenuItem)]);
   };
 
   const updateMenuItem = async (id: string, updates: Partial<MenuItem>) => {
-    const dbUpdates: any = { ...updates };
-    if ('categoryId' in updates) {
-      dbUpdates.category_id = updates.categoryId;
-      delete dbUpdates.categoryId;
+    const dbUpdates = toDbMenuItem(updates);
+    if ('updatedAt' in updates) {
+      dbUpdates.updated_at = new Date().toISOString();
     }
-    if ('isVisible' in updates) {
-      dbUpdates.is_visible = updates.isVisible;
-      delete dbUpdates.isVisible;
-    }
-    if ('createdAt' in updates) delete dbUpdates.createdAt;
-    if ('updatedAt' in updates) dbUpdates.updated_at = new Date().toISOString();
     const { data, error } = await supabase
       .from('menu_items')
       .update(dbUpdates)
       .eq('id', id)
       .select();
     if (error) throw error;
-    setMenuItems(prev => prev.map(item => (item.id === id ? mapItemFromDb(data[0]) : item)));
+    setMenuItems(prev => prev.map(item => (item.id === id ? fromDbMenuItem(data[0]) : item)));
   };
 
   const deleteMenuItem = async (id: string) => {
@@ -454,7 +369,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       // Получаем существующие категории для этого ресторана
       const existingCategories = getRestaurantCategories(restaurantId);
       existingCategories.forEach(cat => {
-        categoryMap.set(cat.name.toLowerCase(), cat.id);
+        categoryMap.set(cat.name.trim().toLowerCase(), cat.id);
       });
 
       // Обрабатываем каждую строку данных
@@ -492,7 +407,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         }
 
         // Создаем категорию, если не существует
-        let categoryId = categoryMap.get(categoryName.toLowerCase());
+        let categoryId = categoryMap.get(categoryName.trim().toLowerCase());
         if (!categoryId) {
           await createCategory({
             name: categoryName,
@@ -503,10 +418,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           });
           // Получаем ID созданной категории из обновленного списка
           const updatedCategories = getRestaurantCategories(restaurantId);
-          const newCategory = updatedCategories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
+          const newCategory = updatedCategories.find(cat => cat.name.trim().toLowerCase() === categoryName.trim().toLowerCase());
           if (newCategory) {
             categoryId = newCategory.id;
-            categoryMap.set(categoryName.toLowerCase(), categoryId);
+            categoryMap.set(categoryName.trim().toLowerCase(), categoryId);
           } else {
             throw new Error(`Не удалось создать категорию: ${categoryName}`);
           }

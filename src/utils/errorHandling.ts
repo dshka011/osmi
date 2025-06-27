@@ -1,4 +1,5 @@
 import { PostgrestError } from '@supabase/supabase-js';
+import { useNotifications } from '../contexts/NotificationContext';
 
 export interface AppError {
   type: 'network' | 'validation' | 'auth' | 'database' | 'file' | 'unknown';
@@ -194,4 +195,15 @@ export const useErrorHandler = () => {
   };
   
   return { handleError };
-}; 
+};
+
+// Хук для централизованной обработки ошибок в async/await
+export function useAsyncErrorHandler() {
+  const { showError } = useNotifications();
+  return (error: any, fallbackMessage?: string) => {
+    const appError = ErrorHandler.handleError(error);
+    showError(appError.title, appError.message || fallbackMessage || 'Произошла ошибка');
+    // Можно логировать ошибку
+    // console.error(appError);
+  };
+} 

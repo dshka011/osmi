@@ -4,6 +4,8 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { MenuItem, MenuCategory } from '../../types';
+import { ErrorHandler } from '../../utils/errorHandling';
+import { uploadImageToStorage } from '../../utils/uploadImage';
 
 const MenuItemManager: React.FC = () => {
   const { t } = useLanguage();
@@ -34,14 +36,20 @@ const MenuItemManager: React.FC = () => {
   const categories = selectedRestaurant ? getRestaurantCategories(selectedRestaurant.id) : [];
   const visibleCategories = categories.filter(cat => cat.isVisible);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const result = event.target?.result as string;
-        setImagePreview(result);
-        setFormData(prev => ({ ...prev, image: result }));
+        // Загружаем в Supabase Storage
+        try {
+          const url = await uploadImageToStorage(result, 'menu-items');
+          setImagePreview(url);
+          setFormData(prev => ({ ...prev, image: url }));
+        } catch (error) {
+          showError('Ошибка загрузки', 'Не удалось загрузить фото блюда');
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -91,7 +99,8 @@ const MenuItemManager: React.FC = () => {
       
       resetForm();
     } catch (error) {
-      showError('Ошибка сохранения', error instanceof Error ? error.message : 'Не удалось сохранить блюдо');
+      const appError = ErrorHandler.handleError(error);
+      showError(appError.title, appError.message || 'Не удалось сохранить блюдо');
     }
   };
 
@@ -122,7 +131,8 @@ const MenuItemManager: React.FC = () => {
         await deleteMenuItem(item.id);
         showSuccess('Блюдо удалено', 'Блюдо успешно удалено из меню');
       } catch (error) {
-        showError('Ошибка удаления', error instanceof Error ? error.message : 'Не удалось удалить блюдо');
+        const appError = ErrorHandler.handleError(error);
+        showError(appError.title, appError.message || 'Не удалось удалить блюдо');
       }
     }
   };
@@ -130,18 +140,23 @@ const MenuItemManager: React.FC = () => {
   const toggleVisibility = async (item: MenuItem) => {
     try {
       await updateMenuItem(item.id, { isVisible: !item.isVisible });
-      showSuccess(
-        item.isVisible ? 'Блюдо скрыто' : 'Блюдо показано',
-        item.isVisible ? 'Блюдо скрыто из публичного меню' : 'Блюдо добавлено в публичное меню'
-      );
+      showSuccess('Видимость изменена', 'Видимость блюда успешно изменена');
     } catch (error) {
-      showError('Ошибка изменения видимости', error instanceof Error ? error.message : 'Не удалось изменить видимость блюда');
+      const appError = ErrorHandler.handleError(error);
+      showError(appError.title, appError.message || 'Не удалось изменить видимость блюда');
     }
   };
 
-  const openAddForm = (categoryId?: string) => {
-    setFormData({ name: '', description: '', price: '', tags: '', categoryId: categoryId || '', image: '' });
-    setImagePreview('');
+  const handleAddMenuItemClick = (categoryId?: string) => {
+    if (!selectedRestaurant) {
+      showError('Ресторан не выбран', 'Сначала выберите ресторан');
+      return;
+    }
+    if (categories.length === 0) {
+      showError('Нет категорий', 'Сначала создайте категорию');
+      return;
+    }
+    if (categoryId) setSelectedCategory(categoryId);
     setIsFormOpen(true);
   };
 
@@ -179,7 +194,7 @@ const MenuItemManager: React.FC = () => {
           <p className="text-gray-600">{t('menuItem.subtitle')}</p>
         </div>
         <button
-          onClick={() => openAddForm()}
+          onClick={() => handleAddMenuItemClick()}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -350,7 +365,7 @@ const MenuItemManager: React.FC = () => {
                     )}
                   </div>
                   <button
-                    onClick={() => openAddForm(category.id)}
+                    onClick={() => handleAddMenuItemClick(category.id)}
                     className="inline-flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <Plus className="w-4 h-4 mr-1" />
@@ -461,7 +476,7 @@ const MenuItemManager: React.FC = () => {
                   <div className="p-8 text-center">
                     <p className="text-gray-500 text-sm">{t('menuItem.noItems')}</p>
                     <button
-                      onClick={() => openAddForm(category.id)}
+                      onClick={() => handleAddMenuItemClick(category.id)}
                       className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
                       {t('menuItem.addFirst')}

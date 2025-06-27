@@ -4,6 +4,7 @@ import supabase from '../../supabaseClient';
 import { Restaurant, MenuCategory, MenuItem, DAY_NAMES } from '../../types';
 import { MapPin, Phone, Mail, Globe, Clock, Tag } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { fromDbRestaurant, fromDbCategory, fromDbMenuItem } from '../../utils/dbMapping';
 
 interface PublicMenuProps {
   restaurantId?: string;
@@ -32,12 +33,7 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
           .eq('id', restaurantId)
           .single();
         if (restError || !restData) throw new Error('Ресторан не найден');
-        setRestaurant({
-          ...restData,
-          workingHours: restData.working_hours,
-          createdAt: new Date(restData.created_at),
-          updatedAt: new Date(restData.updated_at),
-        });
+        setRestaurant(fromDbRestaurant(restData));
         // Получаем категории
         const { data: catData, error: catError } = await supabase
           .from('menu_categories')
@@ -45,7 +41,7 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
           .eq('restaurant_id', restaurantId)
           .order('position', { ascending: true });
         if (catError) throw catError;
-        setCategories(catData || []);
+        setCategories((catData || []).map(fromDbCategory));
         // Получаем блюда
         const { data: itemsData, error: itemsError } = await supabase
           .from('menu_items')
@@ -53,9 +49,9 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
           .in('category_id', (catData || []).map((c: any) => c.id))
           .order('position', { ascending: true });
         if (itemsError) throw itemsError;
-        setMenuItems(itemsData || []);
-      } catch (e: any) {
-        setError(e.message || 'Ошибка загрузки меню');
+        setMenuItems((itemsData || []).map(fromDbMenuItem));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки меню');
       } finally {
         setLoading(false);
       }

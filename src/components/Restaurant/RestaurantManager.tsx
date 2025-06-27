@@ -4,6 +4,8 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { Restaurant, CURRENCIES, DEFAULT_WORKING_HOURS, WorkingHours, DAY_NAMES } from '../../types';
+import { ErrorHandler } from '../../utils/errorHandling';
+import { uploadImageToStorage } from '../../utils/uploadImage';
 
 const RestaurantManager: React.FC = () => {
   const { t } = useLanguage();
@@ -47,27 +49,39 @@ const RestaurantManager: React.FC = () => {
   const [formError, setFormError] = useState<string>('');
   const [formLoading, setFormLoading] = useState(false);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const result = event.target?.result as string;
-        setLogoPreview(result);
-        setFormData(prev => ({ ...prev, logo: result }));
+        // Загружаем в Supabase Storage
+        try {
+          const url = await uploadImageToStorage(result, 'restaurant-logos');
+          setLogoPreview(url);
+          setFormData(prev => ({ ...prev, logo: url }));
+        } catch (error) {
+          showError('Ошибка загрузки', 'Не удалось загрузить логотип');
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const result = event.target?.result as string;
-        setPhotoPreview(result);
-        setFormData(prev => ({ ...prev, photo: result }));
+        // Загружаем в Supabase Storage
+        try {
+          const url = await uploadImageToStorage(result, 'restaurant-photos');
+          setPhotoPreview(url);
+          setFormData(prev => ({ ...prev, photo: url }));
+        } catch (error) {
+          showError('Ошибка загрузки', 'Не удалось загрузить фото');
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -110,7 +124,8 @@ const RestaurantManager: React.FC = () => {
       resetForm();
       setIsFormOpen(false);
     } catch (error) {
-      showError('Ошибка сохранения', error instanceof Error ? error.message : 'Не удалось сохранить ресторан');
+      const appError = ErrorHandler.handleError(error);
+      showError(appError.title, appError.message || 'Не удалось сохранить ресторан');
     }
   };
 
@@ -156,9 +171,10 @@ const RestaurantManager: React.FC = () => {
     if (window.confirm(t('restaurant.delete.confirm', { name: restaurant.name }))) {
       try {
         await deleteRestaurant(restaurant.id);
-        showSuccess('Ресторан удален', 'Ресторан успешно удален из системы');
+        showSuccess('Ресторан удален', 'Ресторан успешно удален');
       } catch (error) {
-        showError('Ошибка удаления', error instanceof Error ? error.message : 'Не удалось удалить ресторан');
+        const appError = ErrorHandler.handleError(error);
+        showError(appError.title, appError.message || 'Не удалось удалить ресторан');
       }
     }
   };
@@ -171,12 +187,13 @@ const RestaurantManager: React.FC = () => {
 
   const handleQRCode = async (restaurant: Restaurant) => {
     try {
+      const qr = await generateQRCode(restaurant.id);
+      setQRCodeData(qr);
       setQRRestaurant(restaurant);
-      const qrCode = await generateQRCode(restaurant.id);
-      setQRCodeData(qrCode);
       setIsQRModalOpen(true);
     } catch (error) {
-      showError(t('qr.error'));
+      const appError = ErrorHandler.handleError(error);
+      showError(appError.title, appError.message || t('qr.error'));
     }
   };
 
@@ -213,7 +230,8 @@ const RestaurantManager: React.FC = () => {
         setCSVImportStatus('');
       }, 2000);
     } catch (error) {
-      showError('Ошибка импорта', error instanceof Error ? error.message : 'Не удалось импортировать меню');
+      const appError = ErrorHandler.handleError(error);
+      showError(appError.title, appError.message || 'Не удалось импортировать меню');
       setCSVImportStatus('');
     }
   };

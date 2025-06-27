@@ -4,6 +4,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { MenuCategory } from '../../types';
+import { ErrorHandler } from '../../utils/errorHandling';
 
 const CategoryManager: React.FC = () => {
   const { t } = useLanguage();
@@ -46,7 +47,8 @@ const CategoryManager: React.FC = () => {
       resetForm();
       setIsFormOpen(false);
     } catch (error) {
-      showError('Ошибка сохранения', error instanceof Error ? error.message : 'Не удалось сохранить категорию');
+      const appError = ErrorHandler.handleError(error);
+      showError(appError.title, appError.message || 'Не удалось сохранить категорию');
     }
   };
 
@@ -76,13 +78,22 @@ const CategoryManager: React.FC = () => {
         await deleteCategory(category.id);
         showSuccess('Категория удалена', 'Категория успешно удалена');
       } catch (error) {
-        showError('Ошибка удаления', error instanceof Error ? error.message : 'Не удалось удалить категорию');
+        const appError = ErrorHandler.handleError(error);
+        showError(appError.title, appError.message || 'Не удалось удалить категорию');
       }
     }
   };
 
   const toggleVisibility = (category: MenuCategory) => {
     updateCategory(category.id, { isVisible: !category.isVisible });
+  };
+
+  const handleAddCategoryClick = () => {
+    if (!selectedRestaurant) {
+      showError('Ресторан не выбран', 'Сначала выберите ресторан');
+      return;
+    }
+    setIsFormOpen(true);
   };
 
   if (!selectedRestaurant) {
@@ -105,7 +116,7 @@ const CategoryManager: React.FC = () => {
           <p className="text-gray-600">{t('category.subtitle')}</p>
         </div>
         <button
-          onClick={() => setIsFormOpen(true)}
+          onClick={handleAddCategoryClick}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -246,7 +257,7 @@ const CategoryManager: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">{t('category.noCategories')}</h3>
           <p className="text-gray-500 mb-6">{t('category.noCategories.description')}</p>
           <button
-            onClick={() => setIsFormOpen(true)}
+            onClick={handleAddCategoryClick}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />

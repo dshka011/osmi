@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import Dashboard from './components/Layout/Dashboard';
 import AuthPage from './components/Auth/AuthPage';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -25,13 +26,15 @@ function AppContent() {
   }
 
   return (
-    <NotificationProvider>
-      <LanguageProvider>
-        <AppProvider>
-          <Dashboard />
-        </AppProvider>
-      </LanguageProvider>
-    </NotificationProvider>
+    <ErrorBoundary>
+      <NotificationProvider>
+        <LanguageProvider>
+          <AppProvider>
+            <Dashboard />
+          </AppProvider>
+        </LanguageProvider>
+      </NotificationProvider>
+    </ErrorBoundary>
   );
 }
 
