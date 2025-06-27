@@ -13,6 +13,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Store, Menu, ListRestart as Restaurant, Eye, List } from 'lucide-react';
+import { CartProvider } from '../../contexts/CartContext';
 
 const Dashboard: React.FC = () => {
   const [activeView, setActiveView] = useState('restaurants');
@@ -30,7 +31,11 @@ const Dashboard: React.FC = () => {
       case 'menu-items':
         return <MenuItemManager />;
       case 'preview':
-        return selectedRestaurant ? <PublicMenu restaurantId={selectedRestaurant.id} /> : <div className="p-8 text-center text-gray-400">{t('publicMenu.noRestaurant.description')}</div>;
+        return selectedRestaurant ? (
+          <CartProvider>
+            <PublicMenu restaurantId={selectedRestaurant.id} />
+          </CartProvider>
+        ) : <div className="p-8 text-center text-gray-400">{t('publicMenu.noRestaurant.description')}</div>;
       case 'orders':
         return <OrdersManager />;
       case 'settings':
