@@ -32,23 +32,44 @@ const MenuItemManager: React.FC = () => {
     categoryId: '',
     image: ''
   });
+  const [imageError, setImageError] = useState<string>('');
 
   const categories = selectedRestaurant ? getRestaurantCategories(selectedRestaurant.id) : [];
   const visibleCategories = categories.filter(cat => cat.isVisible);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageError('');
     const file = e.target.files?.[0];
     if (file) {
+      // Проверка размера (до 5 МБ)
+      if (file.size > 5 * 1024 * 1024) {
+        setImageError('Файл слишком большой (максимум 5 МБ)');
+        return;
+      }
+      // Проверка типа
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        setImageError('Поддерживаются только JPG, PNG, WEBP, GIF');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = async (event) => {
         const result = event.target?.result as string;
-        // Загружаем в Supabase Storage
         try {
-          const url = await uploadImageToStorage(result, 'menu-items');
+          const url = await uploadImageToStorage(result, 'images');
           setImagePreview(url);
           setFormData(prev => ({ ...prev, image: url }));
-        } catch (error) {
-          showError('Ошибка загрузки', 'Не удалось загрузить фото блюда');
+        } catch (error: any) {
+          console.error('Ошибка загрузки фото:', error);
+          let msg = 'Не удалось загрузить фото.';
+          if (error.message?.includes('bucket')) {
+            msg += ' Проверьте, что в Supabase Storage есть bucket "images" и у него разрешена запись.';
+          } else if (error.message?.includes('Failed to fetch')) {
+            msg += ' Проверьте интернет-соединение и настройки Supabase.';
+          } else if (error.message) {
+            msg += ' ' + error.message;
+          }
+          setImageError(msg);
         }
       };
       reader.readAsDataURL(file);
@@ -280,6 +301,7 @@ const MenuItemManager: React.FC = () => {
                     </div>
                   )}
                 </div>
+                {imageError && <div className="text-red-500 text-sm mb-2">{imageError}</div>}
               </div>
 
               <div>
