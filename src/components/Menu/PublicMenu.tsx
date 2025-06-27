@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import supabase from '../../supabaseClient';
 import { Restaurant, MenuCategory, MenuItem, DAY_NAMES } from '../../types';
-import { MapPin, Phone, Mail, Globe, Clock, Tag, ShoppingCart } from 'lucide-react';
+import { MapPin, Phone, Mail, Globe, Clock, Tag, ShoppingCart, Image as ImageIcon } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { fromDbRestaurant, fromDbCategory, fromDbMenuItem } from '../../utils/dbMapping';
 import { useCart } from '../../contexts/CartContext';
@@ -198,11 +198,18 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
             <div className="grid gap-4 md:grid-cols-2">
               {getCategoryItems(cat.id).map((item) => (
                 <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col">
-                  <img
-                    src={item.image && item.image.trim() ? item.image : getDefaultFoodImage(item.name)}
-                    alt={item.name}
-                    className="w-full h-32 object-cover rounded-lg mb-2 border border-gray-200"
-                  />
+                  {item.image && item.image.trim() ? (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-32 object-cover rounded-lg mb-2 border border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-full h-32 flex flex-col items-center justify-center rounded-lg mb-2 border border-gray-200 bg-gray-50 text-gray-400">
+                      <ImageIcon className="w-8 h-8 mb-1" />
+                      <span className="text-xs">Нет фото</span>
+                    </div>
+                  )}
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 mb-1">{item.name}</h3>
                     <p className="text-gray-600 text-sm mb-2">{item.description}</p>
