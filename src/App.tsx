@@ -3,6 +3,7 @@ import { AppProvider } from './contexts/AppContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { LoadingProvider } from './contexts/LoadingContext';
 import Dashboard from './components/Layout/Dashboard';
 import AuthPage from './components/Auth/AuthPage';
 
@@ -25,13 +26,15 @@ function AppContent() {
   }
 
   return (
-    <NotificationProvider>
-      <LanguageProvider>
-        <AppProvider>
-          <Dashboard />
-        </AppProvider>
-      </LanguageProvider>
-    </NotificationProvider>
+    <LoadingProvider>
+      <NotificationProvider>
+        <LanguageProvider>
+          <AppProvider>
+            <Dashboard />
+          </AppProvider>
+        </LanguageProvider>
+      </NotificationProvider>
+    </LoadingProvider>
   );
 }
 
