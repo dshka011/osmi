@@ -75,7 +75,7 @@ const KanbanOrders: React.FC<{ orders: any[]; onStatusChange: (id: string, statu
             {col.orders.map(order => (
               <div
                 key={order.id}
-                className={`bg-white rounded-lg shadow p-3 cursor-pointer border-l-4 border-${col.color} hover:bg-gray-100 transition`}
+                className={`bg-white rounded-lg shadow p-3 cursor-pointer border-l-4 border-${col.color} hover:bg-gray-100 transition ${order.status === 'new' ? 'animate-pulse bg-emerald-100' : ''} ${order.status === 'done' ? 'bg-emerald-50' : ''}`}
                 onClick={() => setSelectedOrder(order)}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -84,6 +84,9 @@ const KanbanOrders: React.FC<{ orders: any[]; onStatusChange: (id: string, statu
                 </div>
                 <div className="text-sm text-gray-600 mb-1">Стол: <span className="font-semibold">{order.table_number || '-'}</span></div>
                 <div className="text-sm font-bold">{order.items.reduce((sum: number, i: any) => sum + i.price * i.qty, 0)} ₽</div>
+                {order.status === 'done' && (
+                  <span className="mt-2 inline-block px-3 py-1 rounded-full bg-emerald-500 text-white text-xs font-bold">Выполнен</span>
+                )}
               </div>
             ))}
           </div>
@@ -187,13 +190,13 @@ const OrdersManager: React.FC = () => {
                 statusBg = 'bg-white';
             }
             return (
-              <div key={order.id} className={`relative flex rounded-xl border-2 p-4 shadow-sm ${statusBg}`} style={{borderColor: `var(--tw-${statusColor})`}}>
+              <div key={order.id} className={`relative flex rounded-xl border-2 p-4 shadow-sm ${statusBg} ${order.status === 'new' ? 'animate-pulse bg-emerald-100' : ''}`} style={{borderColor: `var(--tw-${statusColor})`}}>
                 {/* Цветная полоса слева */}
                 <div className={`absolute left-0 top-0 h-full w-2 rounded-l-xl bg-${statusColor}`}></div>
                 <div className="flex-1 ml-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-lg">Заказ #{order.id.slice(-5)}</span>
-                    <span className={`px-4 py-2 rounded-full text-base font-bold bg-${statusColor} text-white shadow`}>
+                    <span className={`px-4 py-2 rounded-full text-base font-bold ${order.status === 'done' ? 'bg-emerald-500 text-white' : `bg-${statusColor} text-white`} shadow`}>
                       {STATUS_LABELS[order.status] || order.status}
                     </span>
                   </div>
