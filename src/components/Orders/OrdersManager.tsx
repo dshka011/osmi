@@ -86,9 +86,13 @@ const OrdersManager: React.FC = () => {
                 <div className="font-medium">Позиции:</div>
                 <ul className="list-disc ml-6">
                   {order.items.map((item, idx) => (
-                    <li key={idx}>{item.name} x{item.qty}</li>
+                    <li key={idx}>
+                      {item.name} x{item.qty} — {item.price} ₽
+                      <span className="text-gray-400"> (итого: {item.price * item.qty} ₽)</span>
+                    </li>
                   ))}
                 </ul>
+                <div className="font-semibold mt-2">Сумма заказа: {order.items.reduce((sum, i) => sum + i.price * i.qty, 0)} ₽</div>
               </div>
               <div className="text-sm text-gray-600 mb-1">Имя: <span className="font-semibold">{order.guest_name || '-'}</span></div>
               <div className="text-sm text-gray-600 mb-1">Стол: <span className="font-semibold">{order.table_number || '-'}</span></div>
