@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ListRestart as Restaurant, Store, Menu, Eye, Settings, ChevronDown, Check, LogOut } from 'lucide-react';
+import { ListRestart as Restaurant, Store, Menu, Eye, Settings, ChevronDown, Check, LogOut, List } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,6 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
     { id: 'categories', label: t('nav.categories'), icon: Menu, disabled: !selectedRestaurant },
     { id: 'menu-items', label: t('nav.menuItems'), icon: Restaurant, disabled: !selectedRestaurant },
     { id: 'preview', label: t('nav.preview'), icon: Eye, disabled: !selectedRestaurant },
+    { id: 'orders', label: 'Заказы', icon: List, disabled: !selectedRestaurant },
   ];
 
   const handleRestaurantSelect = (restaurant: any) => {
