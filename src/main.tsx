@@ -8,12 +8,15 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { AppProvider } from './contexts/AppContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import { CartProvider } from './contexts/CartContext';
 
 const PublicMenuWithProviders = () => (
   <ErrorBoundary>
     <NotificationProvider>
       <LanguageProvider>
-        <PublicMenu />
+        <CartProvider>
+          <PublicMenu />
+        </CartProvider>
       </LanguageProvider>
     </NotificationProvider>
   </ErrorBoundary>

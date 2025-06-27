@@ -128,3 +128,19 @@ export const DAY_NAMES = {
   saturday: 'Суббота',
   sunday: 'Воскресенье'
 } as const;
+
+export interface CartItem {
+  menuItemId: string;
+  name: string;
+  price: number;
+  qty: number;
+  image?: string;
+}
+
+export interface OrderPayload {
+  restaurantId: string;
+  items: CartItem[];
+  guestName?: string;
+  tableNumber?: string;
+  comment?: string;
+}

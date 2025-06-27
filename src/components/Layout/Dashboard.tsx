@@ -7,9 +7,11 @@ import CategoryManager from '../Menu/CategoryManager';
 import MenuItemManager from '../Menu/MenuItemManager';
 import PublicMenu from '../Menu/PublicMenu';
 import Settings from './Settings';
+import OrdersManager from '../Orders/OrdersManager';
 import { useAppContext } from '../../contexts/AppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Store, Menu, ListRestart as Restaurant, Eye, List } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const [activeView, setActiveView] = useState('restaurants');
@@ -28,12 +30,23 @@ const Dashboard: React.FC = () => {
         return <MenuItemManager />;
       case 'preview':
         return selectedRestaurant ? <PublicMenu restaurantId={selectedRestaurant.id} /> : <div className="p-8 text-center text-gray-400">{t('publicMenu.noRestaurant.description')}</div>;
+      case 'orders':
+        return <OrdersManager />;
       case 'settings':
         return <Settings />;
       default:
         return <RestaurantManager />;
     }
   };
+
+  const navigationItems = [
+    { id: 'restaurants', label: t('nav.restaurants'), icon: Store, badge: restaurants.length },
+    { id: 'categories', label: t('nav.categories'), icon: Menu, disabled: !selectedRestaurant },
+    { id: 'menu-items', label: t('nav.menuItems'), icon: Restaurant, disabled: !selectedRestaurant },
+    { id: 'preview', label: t('nav.preview'), icon: Eye, disabled: !selectedRestaurant },
+    { id: 'orders', label: 'Заказы', icon: List, disabled: !selectedRestaurant },
+    { id: 'settings', label: t('nav.settings'), icon: Settings },
+  ];
 
   return (
     <div className="flex h-screen bg-gray-100">

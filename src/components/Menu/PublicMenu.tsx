@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import supabase from '../../supabaseClient';
 import { Restaurant, MenuCategory, MenuItem, DAY_NAMES } from '../../types';
-import { MapPin, Phone, Mail, Globe, Clock, Tag } from 'lucide-react';
+import { MapPin, Phone, Mail, Globe, Clock, Tag, ShoppingCart } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { fromDbRestaurant, fromDbCategory, fromDbMenuItem } from '../../utils/dbMapping';
+import { useCart } from '../../contexts/CartContext';
+import CartDrawer from './CartDrawer';
 
 interface PublicMenuProps {
   restaurantId?: string;
@@ -20,6 +22,8 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
   const [error, setError] = useState('');
   const [showFullSchedule, setShowFullSchedule] = useState(false);
   const { t } = useLanguage();
+  const { addItem, items } = useCart();
+  const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -129,7 +133,18 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-8 px-2 md:px-0">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-8 px-2 md:px-0 relative">
+      {/* Cart Button */}
+      <button
+        className="fixed bottom-6 right-6 z-[10000] bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg p-4 flex items-center gap-2 text-lg"
+        onClick={() => setCartOpen(true)}
+      >
+        <ShoppingCart className="w-6 h-6" />
+        {items.length > 0 && (
+          <span className="ml-2 bg-white text-emerald-600 rounded-full px-2 py-0.5 text-sm font-bold">{items.reduce((sum, i) => sum + i.qty, 0)}</span>
+        )}
+      </button>
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} onCheckout={() => {}} restaurantId={restaurant?.id || ''} />
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-10 mb-8">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
           {restaurant.photo && (
@@ -200,6 +215,17 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
                       <span className="text-xs text-gray-400 bg-gray-100 rounded px-2 py-1 ml-2">{item.tags.join(', ')}</span>
                     )}
                   </div>
+                  <button
+                    className="mt-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+                    onClick={() => addItem({
+                      menuItemId: item.id,
+                      name: item.name,
+                      price: item.price,
+                      image: item.image,
+                    })}
+                  >
+                    Добавить в заказ
+                  </button>
                 </div>
               ))}
               {getCategoryItems(cat.id).length === 0 && (
