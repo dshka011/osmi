@@ -87,7 +87,7 @@ const OrdersManager: React.FC = () => {
                 <ul className="list-disc ml-6">
                   {order.items.map((item, idx) => (
                     <li key={idx}>
-                      {item.name} x{item.qty} — {item.price} ₽
+                      {item.name} x{item.qty} — {item.price * item.qty} ₽
                     </li>
                   ))}
                 </ul>
@@ -97,15 +97,9 @@ const OrdersManager: React.FC = () => {
               <div className="text-sm text-gray-600 mb-1">Стол: <span className="font-semibold">{order.table_number || '-'}</span></div>
               {order.comment && <div className="text-sm text-gray-600 mb-1">Комментарий: <span className="font-semibold">{order.comment}</span></div>}
               <div className="flex gap-2 mt-3">
-                {order.status !== 'done' && order.status !== 'cancelled' && (
-                  <button onClick={() => updateStatus(order.id, 'in_progress')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold">В работе</button>
-                )}
-                {order.status !== 'done' && (
-                  <button onClick={() => updateStatus(order.id, 'done')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold">Выполнен</button>
-                )}
-                {order.status !== 'cancelled' && (
-                  <button onClick={() => updateStatus(order.id, 'cancelled')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold">Отменить</button>
-                )}
+                <button onClick={() => updateStatus(order.id, 'in_progress')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold">В работе</button>
+                <button onClick={() => updateStatus(order.id, 'done')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold">Выполнен</button>
+                <button onClick={() => updateStatus(order.id, 'cancelled')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold">Отменить</button>
               </div>
             </div>
           ))}
