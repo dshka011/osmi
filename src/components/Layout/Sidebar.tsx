@@ -36,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
     <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
+          <img src={require('../../assets/osmi_logo_2.png')} alt="Osmi Logo" className="w-10 h-10 rounded-lg object-contain" />
           <div>
             <h1 className="text-xl font-bold text-gray-900 font-girlo uppercase">{t('app.title')}</h1>
             <p className="text-sm text-gray-500">{t('app.subtitle')}</p>
