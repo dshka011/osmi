@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import supabase from '../../supabaseClient';
 import { useAppContext } from '../../contexts/AppContext';
 import { MenuCategory, MenuItem } from '../../types';
@@ -23,7 +23,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 // Модалка для деталей заказа
-const OrderModal: React.FC<{ order: any; onClose: () => void; onStatusChange: (id: string, status: string) => void }> = ({ order, onClose, onStatusChange }) => {
+const OrderModal: React.FC<{ order: any; onClose: () => void; onStatusChange: (id: string, status: string) => void; onDelete: (id: string) => void }> = ({ order, onClose, onStatusChange, onDelete }) => {
   if (!order) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -41,10 +41,11 @@ const OrderModal: React.FC<{ order: any; onClose: () => void; onStatusChange: (i
         <div className="text-sm text-gray-600 mb-1">Имя: <span className="font-semibold">{order.guest_name || '-'}</span></div>
         <div className="text-sm text-gray-600 mb-1">Стол: <span className="font-semibold">{order.table_number || '-'}</span></div>
         {order.comment && <div className="text-sm text-gray-600 mb-1">Комментарий: <span className="font-semibold">{order.comment}</span></div>}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-4 flex-wrap">
           <button onClick={() => onStatusChange(order.id, 'in_progress')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold">В работе</button>
           <button onClick={() => onStatusChange(order.id, 'done')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold">Выполнен</button>
           <button onClick={() => onStatusChange(order.id, 'cancelled')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold">Отменить</button>
+          <button onClick={() => { if(window.confirm('Удалить этот заказ?')) onDelete(order.id); }} className="bg-gray-200 hover:bg-red-600 hover:text-white text-gray-700 px-4 py-2 rounded-lg font-semibold ml-auto">Удалить</button>
         </div>
       </div>
     </div>
@@ -58,7 +59,7 @@ const STATUS_COLUMNS = [
   { id: 'cancelled', label: 'Отменён', color: 'red-500' },
 ];
 
-const KanbanOrders: React.FC<{ orders: any[]; onStatusChange: (id: string, status: string) => void }> = ({ orders, onStatusChange }) => {
+const KanbanOrders: React.FC<{ orders: any[]; onStatusChange: (id: string, status: string) => void; onDelete: (id: string) => void }> = ({ orders, onStatusChange, onDelete }) => {
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   // Группируем заказы по статусу
   const grouped = STATUS_COLUMNS.map(col => ({
@@ -96,7 +97,7 @@ const KanbanOrders: React.FC<{ orders: any[]; onStatusChange: (id: string, statu
           </div>
         </div>
       ))}
-      {selectedOrder && <OrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onStatusChange={(id, status) => { onStatusChange(id, status); setSelectedOrder(null); }} />}
+      {selectedOrder && <OrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onStatusChange={(id, status) => { onStatusChange(id, status); setSelectedOrder(null); }} onDelete={onDelete} />}
     </div>
   );
 };
@@ -143,6 +144,12 @@ const OrdersManager: React.FC = () => {
     await supabase.from('orders').update({ status }).eq('id', orderId);
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
   };
+
+  const deleteOrder = useCallback(async (orderId: string) => {
+    if (!window.confirm('Вы уверены, что хотите удалить этот заказ?')) return;
+    await supabase.from('orders').delete().eq('id', orderId);
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+  }, []);
 
   return (
     <div className="p-6">
@@ -219,10 +226,11 @@ const OrdersManager: React.FC = () => {
                   <div className="text-sm text-gray-600 mb-1">Имя: <span className="font-semibold">{order.guest_name || '-'}</span></div>
                   <div className="text-sm text-gray-600 mb-1">Стол: <span className="font-semibold">{order.table_number || '-'}</span></div>
                   {order.comment && <div className="text-sm text-gray-600 mb-1">Комментарий: <span className="font-semibold">{order.comment}</span></div>}
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex gap-2 mt-3 flex-wrap">
                     <button onClick={() => updateStatus(order.id, 'in_progress')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold">В работе</button>
                     <button onClick={() => updateStatus(order.id, 'done')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold">Выполнен</button>
                     <button onClick={() => updateStatus(order.id, 'cancelled')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold">Отменить</button>
+                    <button onClick={() => deleteOrder(order.id)} className="bg-gray-200 hover:bg-red-600 hover:text-white text-gray-700 px-4 py-2 rounded-lg font-semibold ml-auto">Удалить</button>
                   </div>
                 </div>
               </div>
@@ -230,7 +238,7 @@ const OrdersManager: React.FC = () => {
           })}
         </div>
       ) : (
-        <KanbanOrders orders={orders} onStatusChange={updateStatus} />
+        <KanbanOrders orders={orders} onStatusChange={updateStatus} onDelete={deleteOrder} />
       )}
     </div>
   );
