@@ -36,11 +36,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
     <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-            <Restaurant className="w-5 h-5 text-white" />
-          </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{t('app.title')}</h1>
+            <h1 className="text-xl font-bold text-gray-900 font-girlo">{t('app.title')}</h1>
             <p className="text-sm text-gray-500">{t('app.subtitle')}</p>
           </div>
         </div>
