@@ -59,10 +59,14 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
     if (restaurantId) fetchData();
   }, [restaurantId]);
 
+  // Фильтруем только видимые категории
+  const visibleCategories = categories.filter(cat => cat.isVisible);
+
+  // Фильтруем только видимые блюда в категории
   const getCategoryItems = (categoryId: string) =>
     menuItems.filter((item) => {
       // @ts-ignore
-      return (item.categoryId ?? item['category_id']) === categoryId;
+      return (item.categoryId ?? item['category_id']) === categoryId && item.isVisible;
     });
 
   // Локальная функция для форматирования цены
@@ -112,7 +116,7 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
 
   const currency = restaurant.currency || 'RUB';
   
-  if (categories.length === 0) {
+  if (visibleCategories.length === 0) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
@@ -175,7 +179,7 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
         </div>
       </div>
       <div className="max-w-2xl mx-auto">
-        {categories.map((cat) => (
+        {visibleCategories.map((cat) => (
           <div key={cat.id} className="mb-8">
             <h2 className="text-2xl font-semibold text-emerald-700 mb-4 border-b border-emerald-100 pb-1">{cat.name}</h2>
             <div className="grid gap-4 md:grid-cols-2">
