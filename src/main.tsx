@@ -9,16 +9,19 @@ import { AppProvider } from './contexts/AppContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { CartProvider } from './contexts/CartContext';
+import { AuthProvider } from './contexts/AuthContext';
 
 const PublicMenuWithProviders = () => (
   <ErrorBoundary>
     <NotificationProvider>
       <LanguageProvider>
-        <AppProvider>
-          <CartProvider>
-            <PublicMenu />
-          </CartProvider>
-        </AppProvider>
+        <AuthProvider>
+          <AppProvider>
+            <CartProvider>
+              <PublicMenu />
+            </CartProvider>
+          </AppProvider>
+        </AuthProvider>
       </LanguageProvider>
     </NotificationProvider>
   </ErrorBoundary>
