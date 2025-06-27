@@ -518,15 +518,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         // Создаем блюдо меню
         if (categoryId) {
           await createMenuItem({
-            name: itemName,
+          name: itemName,
             description: description || '',
-            price,
+          price,
             categoryId,
             tags,
             image: '',
-            isVisible: true,
+          isVisible: true,
             position: getCategoryItems(categoryId).length
-          });
+        });
         }
       }
     } catch (error) {

@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
-import { Plus, Edit3, Trash2, Store, Phone, Mail, MapPin, Globe, QrCode, Link2, Clock, Camera, X, Upload, Download, Copy } from 'lucide-react';
+import { Plus, Edit3, Trash2, Store, Phone, Mail, MapPin, Globe, QrCode, Link2, Clock, Camera, X, Upload, Download } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { useLoading } from '../../contexts/LoadingContext';
-import LoadingButton from '../ui/LoadingButton';
 import { Restaurant, CURRENCIES, DEFAULT_WORKING_HOURS, WorkingHours, DAY_NAMES } from '../../types';
 
 const RestaurantManager: React.FC = () => {
   const { t } = useLanguage();
   const { showSuccess, showError } = useNotifications();
-  const { isLoading, startLoading, stopLoading } = useLoading();
   const { 
     restaurants, 
     selectedRestaurant, 
@@ -102,9 +99,6 @@ const RestaurantManager: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const loadingKey = editingRestaurant ? 'update-restaurant' : 'create-restaurant';
-    startLoading(loadingKey);
-    
     try {
       if (editingRestaurant) {
         await updateRestaurant(editingRestaurant.id, formData);
@@ -117,8 +111,6 @@ const RestaurantManager: React.FC = () => {
       setIsFormOpen(false);
     } catch (error) {
       showError('Ошибка сохранения', error instanceof Error ? error.message : 'Не удалось сохранить ресторан');
-    } finally {
-      stopLoading(loadingKey);
     }
   };
 
@@ -162,16 +154,11 @@ const RestaurantManager: React.FC = () => {
 
   const handleDelete = async (restaurant: Restaurant) => {
     if (window.confirm(t('restaurant.delete.confirm', { name: restaurant.name }))) {
-      const loadingKey = `delete-restaurant-${restaurant.id}`;
-      startLoading(loadingKey);
-      
       try {
         await deleteRestaurant(restaurant.id);
         showSuccess('Ресторан удален', 'Ресторан успешно удален из системы');
       } catch (error) {
         showError('Ошибка удаления', error instanceof Error ? error.message : 'Не удалось удалить ресторан');
-      } finally {
-        stopLoading(loadingKey);
       }
     }
   };
@@ -183,18 +170,13 @@ const RestaurantManager: React.FC = () => {
   };
 
   const handleQRCode = async (restaurant: Restaurant) => {
-    const loadingKey = `qr-code-${restaurant.id}`;
-    startLoading(loadingKey);
-    
     try {
+      setQRRestaurant(restaurant);
       const qrCode = await generateQRCode(restaurant.id);
       setQRCodeData(qrCode);
-      setQRRestaurant(restaurant);
       setIsQRModalOpen(true);
     } catch (error) {
       showError(t('qr.error'));
-    } finally {
-      stopLoading(loadingKey);
     }
   };
 
@@ -220,8 +202,6 @@ const RestaurantManager: React.FC = () => {
   const handleCSVImport = async () => {
     if (!csvFile || !selectedRestaurant) return;
 
-    startLoading('csv-import');
-    
     try {
       setCSVImportStatus(t('restaurant.csvImport.importing'));
       const csvContent = await csvFile.text();
@@ -235,8 +215,6 @@ const RestaurantManager: React.FC = () => {
     } catch (error) {
       showError('Ошибка импорта', error instanceof Error ? error.message : 'Не удалось импортировать меню');
       setCSVImportStatus('');
-    } finally {
-      stopLoading('csv-import');
     }
   };
 
@@ -257,15 +235,13 @@ const RestaurantManager: React.FC = () => {
               {t('restaurant.csvImport')}
             </button>
           )}
-          <LoadingButton
+          <button
             onClick={() => setIsFormOpen(true)}
-            loading={isLoading('create-restaurant')}
-            loadingText="Создание..."
-            variant="primary"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('restaurant.add')}
-          </LoadingButton>
+          </button>
         </div>
       </div>
 
@@ -362,27 +338,23 @@ const RestaurantManager: React.FC = () => {
                 </div>
               )}
               <div className="flex space-x-3 pt-4">
-                <LoadingButton
+                <button
                   onClick={handleCSVImport}
-                  loading={isLoading('csv-import')}
-                  loadingText="Импорт..."
                   disabled={!csvFile || csvImportStatus.includes('Importing')}
-                  variant="success"
-                  className="flex-1"
+                  className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('restaurant.csvImport.button')}
-                </LoadingButton>
-                <LoadingButton
+                </button>
+                <button
                   onClick={() => {
                     setIsCSVImportOpen(false);
                     setCSVFile(null);
                     setCSVImportStatus('');
                   }}
-                  variant="secondary"
-                  className="flex-1"
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   {t('common.cancel')}
-                </LoadingButton>
+                </button>
               </div>
             </div>
           </div>
@@ -632,23 +604,20 @@ const RestaurantManager: React.FC = () => {
               )}
 
               <div className="flex space-x-3 pt-4">
-                <LoadingButton
+                <button
                   type="submit"
-                  loading={isLoading('create-restaurant') || isLoading('update-restaurant')}
-                  loadingText={editingRestaurant ? "Обновление..." : "Создание..."}
-                  variant="primary"
-                  className="flex-1"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  disabled={formLoading}
                 >
-                  {editingRestaurant ? t('restaurant.update') : t('restaurant.create')}
-                </LoadingButton>
-                <LoadingButton
+                  {formLoading ? t('common.saving') : (editingRestaurant ? t('restaurant.update') : t('restaurant.create'))}
+                </button>
+                <button
                   type="button"
                   onClick={resetForm}
-                  variant="secondary"
-                  className="flex-1"
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   {t('common.cancel')}
-                </LoadingButton>
+                </button>
               </div>
             </form>
           </div>
@@ -703,30 +672,24 @@ const RestaurantManager: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex space-x-1">
-                  <LoadingButton
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEdit(restaurant);
                     }}
-                    variant="secondary"
-                    size="sm"
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                   >
-                    <Edit3 className="w-4 h-4 mr-1" />
-                    {t('common.edit')}
-                  </LoadingButton>
-                  <LoadingButton
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(restaurant);
                     }}
-                    loading={isLoading(`delete-restaurant-${restaurant.id}`)}
-                    loadingText="Удаление..."
-                    variant="danger"
-                    size="sm"
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    {t('common.delete')}
-                  </LoadingButton>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
@@ -768,30 +731,26 @@ const RestaurantManager: React.FC = () => {
               </div>
 
               <div className="flex space-x-2 pt-4 border-t border-gray-200">
-                <LoadingButton
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     copyMenuLink(restaurant.id);
                   }}
-                  variant="success"
-                  size="sm"
+                  className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                 >
-                  <Copy className="w-4 h-4 mr-1" />
+                  <Link2 className="w-4 h-4 mr-1" />
                   {t('restaurant.copyLink')}
-                </LoadingButton>
-                <LoadingButton
+                </button>
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleQRCode(restaurant);
                   }}
-                  loading={isLoading(`qr-code-${restaurant.id}`)}
-                  loadingText="Генерация..."
-                  variant="success"
-                  size="sm"
+                  className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
                 >
                   <QrCode className="w-4 h-4 mr-1" />
                   {t('restaurant.qrCode')}
-                </LoadingButton>
+                </button>
               </div>
             </div>
           </div>
