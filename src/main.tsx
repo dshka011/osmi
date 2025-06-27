@@ -13,9 +13,7 @@ const PublicMenuWithProviders = () => (
   <ErrorBoundary>
     <NotificationProvider>
       <LanguageProvider>
-        <AppProvider>
-          <PublicMenu />
-        </AppProvider>
+        <PublicMenu />
       </LanguageProvider>
     </NotificationProvider>
   </ErrorBoundary>
