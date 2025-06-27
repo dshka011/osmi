@@ -8,19 +8,23 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { AppProvider } from './contexts/AppContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 
+const PublicMenuWithProviders = () => (
+  <NotificationProvider>
+    <LanguageProvider>
+      <AppProvider>
+        <PublicMenu />
+      </AppProvider>
+    </LanguageProvider>
+  </NotificationProvider>
+);
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <NotificationProvider>
-      <LanguageProvider>
-        <AppProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/menu/:restaurantId" element={<PublicMenu />} />
-              <Route path="/*" element={<App />} />
-            </Routes>
-          </BrowserRouter>
-        </AppProvider>
-      </LanguageProvider>
-    </NotificationProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/menu/:restaurantId" element={<PublicMenuWithProviders />} />
+        <Route path="/*" element={<App />} />
+      </Routes>
+    </BrowserRouter>
   </React.StrictMode>
 );
