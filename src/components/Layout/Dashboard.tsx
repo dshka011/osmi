@@ -8,6 +8,7 @@ import MenuItemManager from '../Menu/MenuItemManager';
 import PublicMenu from '../Menu/PublicMenu';
 import Settings from './Settings';
 import OrdersManager from '../Orders/OrdersManager';
+import DashboardStats from '../Orders/DashboardStats';
 import { useAppContext } from '../../contexts/AppContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -57,6 +58,7 @@ const Dashboard: React.FC = () => {
       
       {/* Основной контент */}
       <div className={`flex-1 overflow-auto ${isMobile ? 'pb-16' : ''}`}>
+        {selectedRestaurant && <DashboardStats restaurantId={selectedRestaurant.id} />}
         {renderActiveView()}
       </div>
       
