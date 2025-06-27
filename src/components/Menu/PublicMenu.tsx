@@ -204,6 +204,12 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
                     src={item.image && item.image.trim() ? item.image : getDefaultFoodImage(item.name)}
                     alt={item.name}
                     className="w-full h-32 object-cover rounded-lg mb-2 border border-gray-200"
+                    onError={e => {
+                      const target = e.currentTarget;
+                      if (!target.src.includes('placehold.co')) {
+                        target.src = 'https://placehold.co/400x300?text=Нет+фото';
+                      }
+                    }}
                   />
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 mb-1">{item.name}</h3>
