@@ -3,7 +3,7 @@ import { ListRestart as Restaurant, Store, Menu, Eye, Settings, ChevronDown, Che
 import { useAppContext } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
-import osmiLogo from '../../assets/osmi_logo_2.png';
+import osmiLogo from '../../assets/osmi_logo_2.svg';
 
 interface SidebarProps {
   activeView: string;
