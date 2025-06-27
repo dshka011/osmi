@@ -28,9 +28,7 @@
 
 @font-face {
   font-family: 'Girlo SP';
-  src: url('./assets/fonts/GirloSP.woff2') format('woff2'),
-       url('./assets/fonts/GirloSP.woff') format('woff'),
-       url('./assets/fonts/GirloSP.ttf') format('truetype');
+  src: url('./assets/fonts/GirloSP.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
