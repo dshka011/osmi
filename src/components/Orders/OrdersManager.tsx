@@ -187,7 +187,7 @@ const OrdersManager: React.FC = () => {
                 statusBg = 'bg-white';
             }
             return (
-              <div key={order.id} className={`relative flex rounded-xl border-2 border-gray-200 p-4 shadow-sm ${statusBg}`}>
+              <div key={order.id} className={`relative flex rounded-xl border-2 p-4 shadow-sm ${statusBg} border-gray-200`}>
                 {/* Цветная полоса слева */}
                 <div className={`absolute left-0 top-0 h-full w-2 rounded-l-xl bg-${statusColor}`}></div>
                 <div className="flex-1 ml-4">
