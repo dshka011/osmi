@@ -92,6 +92,7 @@ export interface AppContextType extends AppState {
   formatPrice: (price: number, currency: string) => string;
   formatWorkingHours: (workingHours: WorkingHours) => string;
   generateQRCode: (restaurantId: string) => Promise<string>;
+  getDefaultFoodImage: (dishName: string) => string;
 }
 
 export const CURRENCIES = {

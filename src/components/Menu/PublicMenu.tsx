@@ -7,6 +7,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { fromDbRestaurant, fromDbCategory, fromDbMenuItem } from '../../utils/dbMapping';
 import { useCart } from '../../contexts/CartContext';
 import CartDrawer from './CartDrawer';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface PublicMenuProps {
   restaurantId?: string;
@@ -24,6 +25,7 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
   const { t } = useLanguage();
   const { addItem, items } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
+  const { getDefaultFoodImage } = useAppContext();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -89,10 +91,6 @@ const PublicMenu: React.FC<PublicMenuProps> = ({ restaurantId: propRestaurantId 
   const todayKey = getTodayKey();
   const today = restaurant?.workingHours ? (restaurant.workingHours as any)[todayKey] as import('../../types').DayHours : undefined;
   const fullSchedule = restaurant?.workingHours ? (Object.entries(restaurant.workingHours) as [keyof typeof DAY_NAMES, import('../../types').DayHours][]) : [];
-
-  // --- Заглушка для фото блюда ---
-  const getDefaultFoodImage = (dishName: string) =>
-    `https://source.unsplash.com/400x300/?food,${encodeURIComponent(dishName)}`;
 
   if (loading) {
     return (

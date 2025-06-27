@@ -572,7 +572,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getCurrencySymbol,
     formatPrice,
     formatWorkingHours,
-    generateQRCode
+    generateQRCode,
+    getDefaultFoodImage,
   };
 
   if (loading) return <div>Загрузка...</div>;
