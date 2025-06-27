@@ -22,10 +22,83 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Отменён',
 };
 
+// Модалка для деталей заказа
+const OrderModal: React.FC<{ order: any; onClose: () => void; onStatusChange: (id: string, status: string) => void }> = ({ order, onClose, onStatusChange }) => {
+  if (!order) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div className="bg-white rounded-xl p-6 shadow-xl max-w-lg w-full relative">
+        <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl">×</button>
+        <h2 className="text-xl font-bold mb-2">Заказ #{order.id.slice(-5)}</h2>
+        <div className="mb-2 text-gray-600">{new Date(order.created_at).toLocaleString()}</div>
+        <div className="mb-2 font-medium">Позиции:</div>
+        <ul className="list-disc ml-6 mb-2">
+          {order.items.map((item: any, idx: number) => (
+            <li key={idx}>{item.name} x{item.qty} — {item.price * item.qty} ₽</li>
+          ))}
+        </ul>
+        <div className="font-semibold mb-2">Сумма заказа: {order.items.reduce((sum: number, i: any) => sum + i.price * i.qty, 0)} ₽</div>
+        <div className="text-sm text-gray-600 mb-1">Имя: <span className="font-semibold">{order.guest_name || '-'}</span></div>
+        <div className="text-sm text-gray-600 mb-1">Стол: <span className="font-semibold">{order.table_number || '-'}</span></div>
+        {order.comment && <div className="text-sm text-gray-600 mb-1">Комментарий: <span className="font-semibold">{order.comment}</span></div>}
+        <div className="flex gap-2 mt-4">
+          <button onClick={() => onStatusChange(order.id, 'in_progress')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold">В работе</button>
+          <button onClick={() => onStatusChange(order.id, 'done')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold">Выполнен</button>
+          <button onClick={() => onStatusChange(order.id, 'cancelled')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold">Отменить</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const STATUS_COLUMNS = [
+  { id: 'new', label: 'Новые', color: 'emerald-500' },
+  { id: 'in_progress', label: 'В работе', color: 'yellow-500' },
+  { id: 'done', label: 'Выполнен', color: 'gray-400' },
+  { id: 'cancelled', label: 'Отменён', color: 'red-500' },
+];
+
+const KanbanOrders: React.FC<{ orders: any[]; onStatusChange: (id: string, status: string) => void }> = ({ orders, onStatusChange }) => {
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  // Группируем заказы по статусу
+  const grouped = STATUS_COLUMNS.map(col => ({
+    ...col,
+    orders: orders.filter(o => o.status === col.id)
+  }));
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-4">
+      {grouped.map(col => (
+        <div key={col.id} className="flex-1 min-w-[260px] bg-gray-50 rounded-xl p-2 border border-gray-200">
+          <div className={`font-bold mb-2 text-${col.color}`}>{col.label}</div>
+          <div className="space-y-2">
+            {col.orders.length === 0 && <div className="text-gray-300 text-sm italic">Нет заказов</div>}
+            {col.orders.map(order => (
+              <div
+                key={order.id}
+                className={`bg-white rounded-lg shadow p-3 cursor-pointer border-l-4 border-${col.color} hover:bg-gray-100 transition`}
+                onClick={() => setSelectedOrder(order)}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold">#{order.id.slice(-5)}</span>
+                  <span className="text-xs text-gray-400">{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div className="text-sm text-gray-600 mb-1">Стол: <span className="font-semibold">{order.table_number || '-'}</span></div>
+                <div className="text-sm font-bold">{order.items.reduce((sum: number, i: any) => sum + i.price * i.qty, 0)} ₽</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+      {selectedOrder && <OrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onStatusChange={(id, status) => { onStatusChange(id, status); setSelectedOrder(null); }} />}
+    </div>
+  );
+};
+
 const OrdersManager: React.FC = () => {
   const { selectedRestaurant } = useAppContext();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -67,43 +140,90 @@ const OrdersManager: React.FC = () => {
   return (
     <div className="p-6">
       <audio ref={audioRef} src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae1b2.mp3" preload="auto" />
-      <h1 className="text-2xl font-bold mb-6">Заказы</h1>
+      <h1 className="text-2xl font-bold mb-6 flex items-center gap-4">
+        Заказы
+        <button
+          className={`px-3 py-1 rounded-lg text-sm font-semibold border ${viewMode === 'list' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-600'} transition`}
+          onClick={() => setViewMode('list')}
+        >
+          Список
+        </button>
+        <button
+          className={`px-3 py-1 rounded-lg text-sm font-semibold border ${viewMode === 'kanban' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-600'} transition`}
+          onClick={() => setViewMode('kanban')}
+        >
+          Доска
+        </button>
+      </h1>
       {selectedRestaurant && <DashboardStats restaurantId={selectedRestaurant.id} />}
       {loading ? (
         <div className="text-center text-gray-500">Загрузка...</div>
       ) : orders.length === 0 ? (
         <div className="text-center text-gray-400 py-12">Нет заказов</div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="space-y-6">
-          {orders.map(order => (
-            <div key={order.id} className={`rounded-xl border-2 p-4 shadow-sm ${order.status === 'new' ? 'border-emerald-500 bg-emerald-50 animate-pulse' : 'border-gray-200 bg-white'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-lg">Заказ #{order.id.slice(-5)}</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === 'new' ? 'bg-emerald-500 text-white' : order.status === 'done' ? 'bg-gray-200 text-gray-600' : order.status === 'in_progress' ? 'bg-yellow-200 text-yellow-800' : 'bg-red-200 text-red-700'}`}>{STATUS_LABELS[order.status] || order.status}</span>
+          {orders.map(order => {
+            let statusColor = '';
+            let statusBg = '';
+            switch (order.status) {
+              case 'new':
+                statusColor = 'emerald-500';
+                statusBg = 'bg-emerald-50';
+                break;
+              case 'in_progress':
+                statusColor = 'yellow-500';
+                statusBg = 'bg-yellow-50';
+                break;
+              case 'done':
+                statusColor = 'gray-400';
+                statusBg = 'bg-gray-50';
+                break;
+              case 'cancelled':
+                statusColor = 'red-500';
+                statusBg = 'bg-red-50';
+                break;
+              default:
+                statusColor = 'gray-300';
+                statusBg = 'bg-white';
+            }
+            return (
+              <div key={order.id} className={`relative flex rounded-xl border-2 p-4 shadow-sm ${statusBg}`} style={{borderColor: `var(--tw-${statusColor})`}}>
+                {/* Цветная полоса слева */}
+                <div className={`absolute left-0 top-0 h-full w-2 rounded-l-xl bg-${statusColor}`}></div>
+                <div className="flex-1 ml-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-lg">Заказ #{order.id.slice(-5)}</span>
+                    <span className={`px-4 py-2 rounded-full text-base font-bold bg-${statusColor} text-white shadow`}>
+                      {STATUS_LABELS[order.status] || order.status}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-700 mb-2">{new Date(order.created_at).toLocaleString()}</div>
+                  <div className="mb-2">
+                    <div className="font-medium">Позиции:</div>
+                    <ul className="list-disc ml-6">
+                      {order.items.map((item, idx) => (
+                        <li key={idx}>
+                          {item.name} x{item.qty} — {item.price * item.qty} ₽
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="font-semibold mt-2">Сумма заказа: {order.items.reduce((sum, i) => sum + i.price * i.qty, 0)} ₽</div>
+                  </div>
+                  <div className="text-sm text-gray-600 mb-1">Имя: <span className="font-semibold">{order.guest_name || '-'}</span></div>
+                  <div className="text-sm text-gray-600 mb-1">Стол: <span className="font-semibold">{order.table_number || '-'}</span></div>
+                  {order.comment && <div className="text-sm text-gray-600 mb-1">Комментарий: <span className="font-semibold">{order.comment}</span></div>}
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => updateStatus(order.id, 'in_progress')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold">В работе</button>
+                    <button onClick={() => updateStatus(order.id, 'done')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold">Выполнен</button>
+                    <button onClick={() => updateStatus(order.id, 'cancelled')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold">Отменить</button>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-gray-700 mb-2">{new Date(order.created_at).toLocaleString()}</div>
-              <div className="mb-2">
-                <div className="font-medium">Позиции:</div>
-                <ul className="list-disc ml-6">
-                  {order.items.map((item, idx) => (
-                    <li key={idx}>
-                      {item.name} x{item.qty} — {item.price * item.qty} ₽
-                    </li>
-                  ))}
-                </ul>
-                <div className="font-semibold mt-2">Сумма заказа: {order.items.reduce((sum, i) => sum + i.price * i.qty, 0)} ₽</div>
-              </div>
-              <div className="text-sm text-gray-600 mb-1">Имя: <span className="font-semibold">{order.guest_name || '-'}</span></div>
-              <div className="text-sm text-gray-600 mb-1">Стол: <span className="font-semibold">{order.table_number || '-'}</span></div>
-              {order.comment && <div className="text-sm text-gray-600 mb-1">Комментарий: <span className="font-semibold">{order.comment}</span></div>}
-              <div className="flex gap-2 mt-3">
-                <button onClick={() => updateStatus(order.id, 'in_progress')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-semibold">В работе</button>
-                <button onClick={() => updateStatus(order.id, 'done')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold">Выполнен</button>
-                <button onClick={() => updateStatus(order.id, 'cancelled')} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold">Отменить</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+      ) : (
+        <KanbanOrders orders={orders} onStatusChange={updateStatus} />
       )}
     </div>
   );
